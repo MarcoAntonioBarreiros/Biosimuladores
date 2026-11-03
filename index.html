@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simuladores de Biologia Molecular</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #f5f0e6;
+    color: #1c1612;
+    padding: 48px 22px;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(180,160,120,0.10) 0%, transparent 50%),
+      radial-gradient(circle at 80% 85%, rgba(14,103,89,0.06) 0%, transparent 50%);
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-family: 'Fraunces', serif; font-weight: 700; font-size: clamp(26px,4vw,38px); letter-spacing: -0.02em; margin-bottom: 6px; }
+  .sub { color: #8a7f6f; font-size: 14px; margin-bottom: 32px; }
+  a.card {
+    display: block; text-decoration: none; color: inherit;
+    background: #fffdf7; border: 1px solid #d6cab2; border-radius: 12px;
+    padding: 18px 20px; margin-bottom: 14px; transition: all 0.15s ease;
+  }
+  a.card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(28,22,18,0.10); border-color: #0e6759; }
+  a.card .t { font-family: 'Fraunces', serif; font-weight: 700; font-size: 18px; color: #08423a; }
+  a.card .d { font-size: 14px; color: #4a3f33; margin-top: 4px; }
+  footer { margin-top: 28px; font-size: 12px; color: #8a7f6f; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Simuladores de Biologia Molecular</h1>
+  <p class="sub">Recursos interativos para embedar em apresentações · UFPR Palotina</p>
+
+  <a class="card" href="ligacao-fosfodiester.html">
+    <div class="t">Ligação fosfodiéster e assimetria da fita</div>
+    <div class="d">Por que a fita tem extremidades 5′ e 3′ diferentes.</div>
+  </a>
+  <a class="card" href="desnaturacao.html">
+    <div class="t">Desnaturação e anelamento</div>
+    <div class="d">A corrida do primer com a variação de temperatura.</div>
+  </a>
+  <a class="card" href="sintese-dna.html">
+    <div class="t">Síntese de DNA</div>
+    <div class="d">Polimerização no sentido 5′→3′.</div>
+  </a>
+  <a class="card" href="forquilha-replicacao.html">
+    <div class="t">Forquilha de replicação</div>
+    <div class="d">Fita líder, fita tardia e fragmentos de Okazaki.</div>
+  </a>
+
+  <footer>Cada simulador também abre em URL própria — use o link individual para embedar um por slide no Gamma.</footer>
+</div>
+</body>
+</html>

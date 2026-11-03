@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Replicação de DNA — Primer e Extensão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f5f0e6;
+  --paper-deep: #ebe3d3;
+  --ink: #1c1612;
+  --ink-soft: #4a3f33;
+  --ink-faint: #8a7f6f;
+  --rule: #d6cab2;
+  --teal: #0e6759;
+  --teal-deep: #08423a;
+  --teal-light: #a7d6cc;
+  --oxblood: #8b2c20;
+  --phosphate: #d97706;
+  --phosphate-soft: #fde6c4;
+  --phosphate-glow: #fbbf24;
+  --hydroxyl: #dc2626;
+  --hydroxyl-soft: #fecaca;
+  --sugar: #3b6b8a;
+  --sugar-soft: #cfe1ee;
+  --ppi: #b45309;
+  --base-a: #a91e22;
+  --base-t: #b88008;
+  --base-g: #1e3a8a;
+  --base-c: #16744d;
+  --hbond: #6b5d4f;
+  --shadow-md: 0 4px 12px rgba(28,22,18,0.08);
+  --shadow-lg: 0 12px 32px rgba(28,22,18,0.18);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(180,160,120,0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(14,103,89,0.05) 0%, transparent 50%);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.frame { max-width: 1440px; margin: 0 auto; padding: 22px; }
+
+.head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 18px;
+}
+.head h1 {
+  font-family: 'Fraunces', serif;
+  font-weight: 800;
+  font-size: clamp(24px, 2.6vw, 34px);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.head h1 em { font-style: italic; color: var(--oxblood); }
+.head .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-faint);
+  margin-top: 6px;
+}
+.stats { display: flex; gap: 8px; }
+.stat {
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 7px 10px;
+  text-align: center;
+  min-width: 68px;
+}
+.stat .num {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--teal-deep);
+  font-variant-numeric: tabular-nums;
+}
+.stat .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  margin-top: 4px;
+}
+
+/* PHASE BADGE */
+.phase-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  align-items: center;
+}
+.phase {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 6px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--rule);
+  background: var(--paper-deep);
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+.phase.active {
+  background: var(--teal-deep);
+  color: var(--paper);
+  border-color: var(--teal-deep);
+}
+.phase.done {
+  background: var(--teal-light);
+  color: var(--teal-deep);
+  border-color: var(--teal);
+}
+.phase-arrow {
+  color: var(--ink-faint);
+  font-size: 16px;
+}
+
+.lab { display: grid; grid-template-columns: 1fr 290px; gap: 18px; }
+
+.lab-area {
+  background: linear-gradient(180deg, #faf6ed 0%, #f0e8d4 100%);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 24px 16px 18px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 380px;
+}
+.lab-area::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px dashed rgba(74,63,51,0.13);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.strand-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 900px;
+  margin-bottom: -2px;
+  position: relative;
+  z-index: 2;
+}
+.strand-end {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--teal-deep);
+  background: var(--paper);
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--rule);
+}
+.strand-end small {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  font-size: 10px;
+  color: var(--ink-soft);
+  margin-left: 4px;
+}
+
+#duplex-svg {
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* PALETTE */
+.palette {
+  background: rgba(255,253,247,0.6);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 16px;
+  position: sticky;
+  top: 18px;
+  align-self: start;
+}
+.col-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  font-weight: 600;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.palette-info {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  background: var(--phosphate-soft);
+  padding: 9px 11px;
+  border-radius: 6px;
+  border-left: 3px solid var(--phosphate);
+  margin-bottom: 12px;
+}
+.palette-info strong {
+  color: var(--phosphate);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+}
+
+/* Primer card (Phase 1) */
+.primer-card {
+  background: var(--paper);
+  border: 2px solid var(--teal);
+  border-radius: 10px;
+  padding: 12px 10px;
+  cursor: grab;
+  transition: all 0.15s ease;
+  touch-action: none;
+  position: relative;
+}
+.primer-card::before {
+  content: 'arraste-me';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--teal);
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding: 3px 9px;
+  border-radius: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  animation: bounce 1.4s ease-in-out infinite;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-3px); }
+}
+.primer-card:hover { box-shadow: var(--shadow-md); }
+.primer-card:active { cursor: grabbing; }
+.primer-card.dragging { opacity: 0.3; }
+.primer-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.primer-seq {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: center;
+  margin-top: 6px;
+  letter-spacing: 0.1em;
+}
+.primer-seq .end-mark { color: var(--phosphate); font-size: 10px; }
+.primer-seq .oh-mark { color: var(--hydroxyl); font-size: 10px; }
+
+/* dNTP grid (Phase 2) */
+.dntp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dntp-card {
+  background: var(--paper);
+  border: 1.5px solid var(--rule);
+  border-radius: 8px;
+  padding: 7px;
+  cursor: grab;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  touch-action: none;
+}
+.dntp-card:hover { border-color: var(--teal); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.dntp-card:active { cursor: grabbing; }
+.dntp-card.dragging { opacity: 0.3; }
+.dntp-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 3px;
+}
+.dntp-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.actions { display: flex; gap: 6px; margin-top: 12px; }
+.btn {
+  flex: 1;
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 8px 4px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  transition: all 0.15s ease;
+}
+.btn:hover { background: var(--teal); color: white; border-color: var(--teal); }
+.btn-primary { background: var(--teal-deep); color: white; border-color: var(--teal-deep); }
+.btn-primary:hover { background: var(--ink); border-color: var(--ink); }
+
+.readout {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  margin-top: 10px;
+  min-height: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.readout .lbl { font-size: 8px; color: var(--phosphate-glow); letter-spacing: 0.15em; }
+.readout .seq { word-break: break-all; }
+
+/* GHOST */
+.ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  filter: drop-shadow(0 8px 16px rgba(28,22,18,0.25));
+  transition: transform 0.2s ease;
+}
+.ghost.snap-near { transform: scale(1.06) translateY(-3px); }
+.ghost.mismatch { animation: shake 0.4s ease-in-out; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+/* PPi particle */
+.ppi-particle {
+  position: absolute;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 12px;
+  color: white;
+  background: var(--ppi);
+  border-radius: 12px;
+  padding: 4px 9px;
+  pointer-events: none;
+  z-index: 60;
+  box-shadow: var(--shadow-md);
+  animation: ppi-fly 1.5s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+}
+@keyframes ppi-fly {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  15% { opacity: 1; transform: translate(0, -6px) scale(1.05); }
+  100% { opacity: 0; transform: translate(220px, -180px) scale(0.5) rotate(30deg); }
+}
+
+.bond-flash {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--phosphate-glow) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 4;
+  animation: flash 0.7s ease-out forwards;
+  transform: translate(-50%, -50%);
+}
+@keyframes flash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  40% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.3); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.9); }
+}
+
+.mechanism {
+  margin-top: 18px;
+  padding: 16px 22px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.mechanism h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--phosphate-glow);
+  margin-bottom: 6px;
+  font-style: italic;
+}
+.mechanism em.hl { color: var(--phosphate-glow); font-style: normal; font-weight: 600; }
+.mechanism em.oh { color: #fca5a5; font-style: normal; font-weight: 600; }
+.mechanism em.hb { color: #a7d6cc; font-style: normal; font-weight: 600; }
+
+.toast {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 13px 20px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 100;
+  max-width: 480px;
+  text-align: center;
+  line-height: 1.4;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.err { background: var(--oxblood); }
+.toast.win { background: var(--teal-deep); }
+.toast strong { color: var(--phosphate-glow); }
+.toast.win strong, .toast.err strong { color: var(--phosphate-glow); }
+
+/* SVG animation classes */
+.target-slot { animation: target-pulse 1.4s ease-in-out infinite; }
+@keyframes target-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.9; }
+}
+.active-oh { animation: oh-pulse 1.4s ease-in-out infinite; }
+@keyframes oh-pulse {
+  0%, 100% { stroke-opacity: 0.7; stroke-width: 2.5; }
+  50% { stroke-opacity: 0.3; stroke-width: 5; }
+}
+
+@media (max-width: 980px) {
+  .lab { grid-template-columns: 1fr; }
+  .palette { position: static; }
+}
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <header class="head">
+    <div>
+      <h1>Replicação: <em>do primer à extensão</em></h1>
+      <div class="sub">Pareamento de bases · ligação fosfodiéster · pontes de hidrogênio</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="num" id="nt-count">0</div><div class="label">incorporados</div></div>
+      <div class="stat"><div class="num" id="hb-count">0</div><div class="label">pontes H</div></div>
+      <div class="stat"><div class="num" id="ppi-count">0</div><div class="label">PPi liberado</div></div>
+    </div>
+  </header>
+
+  <div class="phase-bar">
+    <div class="phase" id="phase1">1 · Posicionar primer</div>
+    <span class="phase-arrow">›</span>
+    <div class="phase" id="phase2">2 · Estender 5′→3′</div>
+    <span class="phase-arrow">›</span>
+    <div class="phase" id="phase3">3 · Fita completa</div>
+  </div>
+
+  <div class="lab">
+    <section class="lab-area" id="lab-area">
+      <div class="strand-labels">
+        <div class="strand-end">3′ <small>fita molde</small></div>
+        <div class="strand-end">5′ <small>fita molde</small></div>
+      </div>
+      <svg id="duplex-svg" viewBox="0 0 860 300" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="strand-labels">
+        <div class="strand-end">5′ <small>nova fita</small></div>
+        <div class="strand-end">3′ <small>nova fita</small></div>
+      </div>
+    </section>
+
+    <aside class="palette" id="palette">
+      <div class="col-title" id="palette-title">Etapa 1 · Primer</div>
+      <div class="palette-info" id="palette-info"></div>
+      <div id="palette-content"></div>
+      <div class="actions">
+        <button class="btn" onclick="undo()">↶ Desfazer</button>
+        <button class="btn btn-primary" onclick="reset()">↺ Reiniciar</button>
+      </div>
+      <div class="readout">
+        <div class="lbl">FITA SENDO SINTETIZADA</div>
+        <div class="seq" id="readout-seq">—</div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="mechanism">
+    <h3>O que está acontecendo</h3>
+    <p><strong style="color:var(--phosphate-glow)">Etapa 1.</strong> O primer (oligonucleotídeo curto) reconhece a região complementar da fita molde por <em class="hb">pareamento de bases</em>: A↔T forma <em class="hb">2 pontes de H</em>; G↔C forma <em class="hb">3 pontes de H</em>. Sem primer, a DNA polimerase não consegue iniciar — ela só estende.</p>
+    <p style="margin-top:6px;"><strong style="color:var(--phosphate-glow)">Etapa 2.</strong> A polimerase posiciona o dNTP cujo pareamento é correto com a base molde no sítio ativo. A <em class="oh">3′-OH do último nucleotídeo</em> ataca o <em class="hl">α-fosfato</em> do dNTP; β + γ saem como <em class="hl">PPi</em>; forma-se nova ligação fosfodiéster 3′-O-P-O-5′. A síntese é estritamente <strong>5′→3′</strong> porque só essa extremidade tem hidroxila reativa.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ DATA ============
+const TEMPLATE = ['T','A','C','G','T','G','C','A','G','A']; // 3'→5' lendo da esquerda p/ direita
+const PRIMER   = ['A','T','G','C'];                          // 5'→3' (parea com primeiras 4)
+// Complemento esperado (nova fita 5'→3'): A T G C A C G T C T
+
+const COLORS = { A:'#a91e22', T:'#b88008', G:'#1e3a8a', C:'#16744d' };
+const SOFT   = { A:'#fca5a5', T:'#fde68a', G:'#93c5fd', C:'#86efac' };
+const FULLNAMES = { A:'Adenina', T:'Timina', G:'Guanina', C:'Citosina' };
+
+// ============ GEOMETRY ============
+const W = 80;            // largura por nt
+const OFFSET_X = 30;     // padding esquerda
+const SUGAR_TOP_Y = 38;  // centro do açúcar da fita molde
+const SUGAR_BOT_Y = 262; // centro do açúcar da fita nova
+const BASE_TOP_Y = 88;   // centro da base da fita molde (apontando p/ baixo)
+const BASE_BOT_Y = 212;  // centro da base da fita nova (apontando p/ cima)
+const HBOND_Y1 = 110;    // início pontes H
+const HBOND_Y2 = 190;    // fim pontes H
+
+// ============ STATE ============
+let state = {
+  phase: 'primer',  // 'primer' | 'extend' | 'done'
+  newStrand: []     // bases incorporadas (inclui primer após colocado)
+};
+let isAnimating = false;
+
+// ============ HELPERS ============
+const complement = b => ({A:'T', T:'A', G:'C', C:'G'})[b];
+const bonds = (b1, b2) => {
+  if ((b1==='A' && b2==='T') || (b1==='T' && b2==='A')) return 2;
+  if ((b1==='G' && b2==='C') || (b1==='C' && b2==='G')) return 3;
+  return 0;
+};
+
+function cx(i) { return OFFSET_X + i * W + W/2; }
+
+// ============ SVG BUILDERS ============
+
+function svgTemplateNt(base, i) {
+  const x = cx(i);
+  const color = COLORS[base];
+  return `
+    <g class="t-nt" data-i="${i}">
+      <!-- Sugar pentagon (top strand, base down) -->
+      <polygon points="${x-16},${SUGAR_TOP_Y-12} ${x+16},${SUGAR_TOP_Y-12} ${x+20},${SUGAR_TOP_Y+8} ${x},${SUGAR_TOP_Y+20} ${x-20},${SUGAR_TOP_Y+8}"
+               fill="${SOFT.G==='#93c5fd'?'#dfe9f1':'#cfe1ee'}" stroke="#3b6b8a" stroke-width="1.5"/>
+      <text x="${x-22}" y="${SUGAR_TOP_Y-8}" font-size="8" fill="#3b6b8a" font-weight="700" font-family="JetBrains Mono">5′</text>
+      <text x="${x+22}" y="${SUGAR_TOP_Y+22}" font-size="8" fill="#3b6b8a" font-weight="700" font-family="JetBrains Mono">3′</text>
+      
+      <!-- 5'-P (left side of sugar, connects to previous sugar's 3') -->
+      <circle cx="${x-30}" cy="${SUGAR_TOP_Y-12}" r="7" fill="#d97706"/>
+      <text x="${x-30}" y="${SUGAR_TOP_Y-9}" text-anchor="middle" fill="white" font-weight="700" font-size="9" font-family="Fraunces">P</text>
+      <!-- bond P → C5' -->
+      <line x1="${x-23}" y1="${SUGAR_TOP_Y-12}" x2="${x-16}" y2="${SUGAR_TOP_Y-12}" stroke="#1c1612" stroke-width="1.5"/>
+      <!-- bond previous 3' → current P (linha de continuidade da fita) -->
+      ${i > 0 ? `<line x1="${cx(i-1)+20}" y1="${SUGAR_TOP_Y+8}" x2="${x-30}" y2="${SUGAR_TOP_Y-12}" stroke="#1c1612" stroke-width="1.5"/>` : ''}
+      
+      <!-- N-glycosidic bond (C1' down to base) -->
+      <line x1="${x}" y1="${SUGAR_TOP_Y+20}" x2="${x}" y2="${BASE_TOP_Y-12}" stroke="#1c1612" stroke-width="1.5"/>
+      
+      <!-- Base -->
+      <rect x="${x-15}" y="${BASE_TOP_Y-12}" width="30" height="24" rx="4" fill="${color}"/>
+      <text x="${x}" y="${BASE_TOP_Y+5}" text-anchor="middle" fill="white" font-weight="800" font-size="16" font-family="Fraunces">${base}</text>
+    </g>
+  `;
+}
+
+function svgNewStrandNt(base, i, isActive) {
+  const x = cx(i);
+  const color = COLORS[base];
+  return `
+    <g class="n-nt" data-i="${i}">
+      <!-- Base on top (pointing up to template) -->
+      <rect x="${x-15}" y="${BASE_BOT_Y-12}" width="30" height="24" rx="4" fill="${color}"/>
+      <text x="${x}" y="${BASE_BOT_Y+5}" text-anchor="middle" fill="white" font-weight="800" font-size="16" font-family="Fraunces">${base}</text>
+      
+      <!-- N-glycosidic bond (base up to C1') -->
+      <line x1="${x}" y1="${BASE_BOT_Y+12}" x2="${x}" y2="${SUGAR_BOT_Y-20}" stroke="#1c1612" stroke-width="1.5"/>
+      
+      <!-- Sugar pentagon (bottom strand, base up — mirrored) -->
+      <polygon points="${x-20},${SUGAR_BOT_Y-8} ${x},${SUGAR_BOT_Y-20} ${x+20},${SUGAR_BOT_Y-8} ${x+16},${SUGAR_BOT_Y+12} ${x-16},${SUGAR_BOT_Y+12}"
+               fill="#cfe1ee" stroke="#3b6b8a" stroke-width="1.5"/>
+      <text x="${x-22}" y="${SUGAR_BOT_Y-8}" font-size="8" fill="#3b6b8a" font-weight="700" font-family="JetBrains Mono">5′</text>
+      <text x="${x+22}" y="${SUGAR_BOT_Y+10}" font-size="8" fill="${isActive?'#dc2626':'#3b6b8a'}" font-weight="700" font-family="JetBrains Mono">3′</text>
+      
+      <!-- 5'-P (left side of sugar, connects to previous nt's 3') -->
+      <circle cx="${x-30}" cy="${SUGAR_BOT_Y+12}" r="7" fill="#d97706"/>
+      <text x="${x-30}" y="${SUGAR_BOT_Y+15}" text-anchor="middle" fill="white" font-weight="700" font-size="9" font-family="Fraunces">P</text>
+      <line x1="${x-23}" y1="${SUGAR_BOT_Y+12}" x2="${x-16}" y2="${SUGAR_BOT_Y+12}" stroke="#1c1612" stroke-width="1.5"/>
+      ${i > 0 ? `<line x1="${cx(i-1)+20}" y1="${SUGAR_BOT_Y-8}" x2="${x-30}" y2="${SUGAR_BOT_Y+12}" stroke="#1c1612" stroke-width="1.5"/>` : ''}
+      
+      <!-- 3' bond (right) -->
+      ${isActive ? `
+        <!-- Active 3'-OH free -->
+        <line x1="${x+20}" y1="${SUGAR_BOT_Y-8}" x2="${x+34}" y2="${SUGAR_BOT_Y-8}" stroke="#dc2626" stroke-width="2.5"/>
+        <circle cx="${x+40}" cy="${SUGAR_BOT_Y-8}" r="5" fill="#faf6ed" stroke="#dc2626" stroke-width="1.5"/>
+        <text x="${x+40}" y="${SUGAR_BOT_Y-5}" text-anchor="middle" font-size="8" fill="#dc2626" font-weight="700" font-family="Fraunces">O</text>
+        <line x1="${x+45}" y1="${SUGAR_BOT_Y-8}" x2="${x+54}" y2="${SUGAR_BOT_Y-8}" stroke="#dc2626" stroke-width="2"/>
+        <text x="${x+60}" y="${SUGAR_BOT_Y-5}" text-anchor="middle" font-size="9" fill="#dc2626" font-weight="700" font-family="JetBrains Mono">H</text>
+        <circle class="active-oh" cx="${x+40}" cy="${SUGAR_BOT_Y-8}" r="14" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-opacity="0.6"/>
+        <!-- label -->
+        <rect x="${x+8}" y="${SUGAR_BOT_Y+22}" width="64" height="14" rx="7" fill="#dc2626"/>
+        <text x="${x+40}" y="${SUGAR_BOT_Y+32}" text-anchor="middle" font-size="9" fill="white" font-weight="700" font-family="JetBrains Mono">3′-OH livre</text>
+      ` : ''}
+    </g>
+  `;
+}
+
+function svgHBond(templateBase, newBase, i) {
+  const x = cx(i);
+  const n = bonds(templateBase, newBase);
+  if (n === 0) return '';
+  const gap = 6;
+  const totalW = (n - 1) * gap;
+  let lines = '';
+  for (let k = 0; k < n; k++) {
+    const lx = x - totalW/2 + k * gap;
+    lines += `<line x1="${lx}" y1="${HBOND_Y1}" x2="${lx}" y2="${HBOND_Y2}" stroke="#6b5d4f" stroke-width="1.8" stroke-dasharray="3,3"/>`;
+  }
+  // Small label showing count
+  lines += `<text x="${x+20}" y="${(HBOND_Y1+HBOND_Y2)/2+3}" font-size="9" fill="#6b5d4f" font-family="JetBrains Mono" font-weight="700" opacity="0.8">${n}H</text>`;
+  return `<g class="hbond" data-i="${i}">${lines}</g>`;
+}
+
+function svgPrimerTargetSlot(i) {
+  const x = cx(i);
+  return `
+    <g class="target-slot" data-i="${i}">
+      <rect x="${x-15}" y="${BASE_BOT_Y-12}" width="30" height="24" rx="4" 
+            fill="none" stroke="${COLORS[complement(TEMPLATE[i])]}" stroke-width="2" stroke-dasharray="4,3"/>
+      <text x="${x}" y="${BASE_BOT_Y+5}" text-anchor="middle" fill="${COLORS[complement(TEMPLATE[i])]}" 
+            font-weight="700" font-size="13" font-family="Fraunces" opacity="0.5">${complement(TEMPLATE[i])}</text>
+      <polygon points="${x-15},${SUGAR_BOT_Y-8} ${x+15},${SUGAR_BOT_Y-8} ${x+13},${SUGAR_BOT_Y+10} ${x-13},${SUGAR_BOT_Y+10}"
+               fill="none" stroke="#3b6b8a" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.4"/>
+    </g>
+  `;
+}
+
+function svgExtendSlot(i, isActive) {
+  const x = cx(i);
+  const expected = complement(TEMPLATE[i]);
+  if (!isActive) {
+    // Empty slot, dim
+    return `
+      <g class="empty-slot" data-i="${i}" opacity="0.25">
+        <rect x="${x-15}" y="${BASE_BOT_Y-12}" width="30" height="24" rx="4" 
+              fill="none" stroke="#8a7f6f" stroke-width="1" stroke-dasharray="2,3"/>
+      </g>
+    `;
+  }
+  // Active slot — show the position the next dNTP will go
+  return `
+    <g class="active-slot" data-i="${i}">
+      <rect x="${x-15}" y="${BASE_BOT_Y-12}" width="30" height="24" rx="4"
+            fill="${COLORS[expected]}" fill-opacity="0.15"
+            stroke="${COLORS[expected]}" stroke-width="2" stroke-dasharray="4,3"/>
+      <text x="${x}" y="${BASE_BOT_Y+5}" text-anchor="middle" fill="${COLORS[expected]}" 
+            font-weight="700" font-size="13" font-family="Fraunces" opacity="0.7">?</text>
+    </g>
+  `;
+}
+
+// 5' phosphate label on first nt of new strand
+function svgNewStrandFreeEnd() {
+  if (state.newStrand.length === 0) return '';
+  const x = cx(0) - 30;
+  return `
+    <text x="${x-4}" y="${SUGAR_BOT_Y+30}" text-anchor="end" font-size="9" fill="#b45309" 
+          font-weight="700" font-family="JetBrains Mono">5′-P livre</text>
+  `;
+}
+
+// ============ MAIN RENDER ============
+function render() {
+  const svg = document.getElementById('duplex-svg');
+  let content = '';
+
+  // Template strand backbone connector (continuous line of sugars)
+  // Render template nts
+  for (let i = 0; i < TEMPLATE.length; i++) {
+    content += svgTemplateNt(TEMPLATE[i], i);
+  }
+
+  // H-bonds (only where new strand has bases)
+  for (let i = 0; i < state.newStrand.length; i++) {
+    content += svgHBond(TEMPLATE[i], state.newStrand[i], i);
+  }
+
+  // New strand: placed nts + slots
+  for (let i = 0; i < TEMPLATE.length; i++) {
+    if (i < state.newStrand.length) {
+      content += svgNewStrandNt(state.newStrand[i], i, i === state.newStrand.length - 1);
+    } else if (state.phase === 'primer' && i < PRIMER.length) {
+      content += svgPrimerTargetSlot(i);
+    } else if (state.phase === 'extend') {
+      content += svgExtendSlot(i, i === state.newStrand.length);
+    }
+  }
+
+  content += svgNewStrandFreeEnd();
+  svg.innerHTML = content;
+
+  renderPalette();
+  updateStats();
+  updateReadout();
+  updatePhaseBar();
+}
+
+function updatePhaseBar() {
+  const p1 = document.getElementById('phase1');
+  const p2 = document.getElementById('phase2');
+  const p3 = document.getElementById('phase3');
+  [p1,p2,p3].forEach(el => el.classList.remove('active','done'));
+  if (state.phase === 'primer') p1.classList.add('active');
+  else if (state.phase === 'extend') { p1.classList.add('done'); p2.classList.add('active'); }
+  else if (state.phase === 'done') { p1.classList.add('done'); p2.classList.add('done'); p3.classList.add('active'); }
+}
+
+function updateStats() {
+  document.getElementById('nt-count').textContent = state.newStrand.length;
+  let hbTotal = 0;
+  for (let i = 0; i < state.newStrand.length; i++) {
+    hbTotal += bonds(TEMPLATE[i], state.newStrand[i]);
+  }
+  document.getElementById('hb-count').textContent = hbTotal;
+  // PPi: 1 per extension event (not per primer base, since primer comes pre-formed)
+  const ppi = Math.max(0, state.newStrand.length - (state.newStrand.length >= PRIMER.length ? PRIMER.length : state.newStrand.length));
+  document.getElementById('ppi-count').textContent = ppi;
+}
+
+function updateReadout() {
+  const r = document.getElementById('readout-seq');
+  if (state.newStrand.length === 0) {
+    r.textContent = '—';
+    return;
+  }
+  const seq = state.newStrand.map(b => `<span style="color:${SOFT[b]}">${b}</span>`).join('');
+  const head = '<span style="color:var(--phosphate-glow)">5′-P-</span>';
+  const tail = '<span style="color:var(--phosphate-glow)">-OH 3′</span>';
+  r.innerHTML = head + seq + tail;
+}
+
+// ============ PALETTE ============
+function renderPalette() {
+  const title = document.getElementById('palette-title');
+  const info = document.getElementById('palette-info');
+  const content = document.getElementById('palette-content');
+
+  if (state.phase === 'primer') {
+    title.textContent = 'Etapa 1 · Primer';
+    info.innerHTML = `<strong>INSTRUÇÃO</strong><br>Arraste o primer sobre a região <em>complementar</em> da fita molde. As bases vão parear: A↔T (2H), G↔C (3H).`;
+    content.innerHTML = `
+      <div class="primer-card" id="primer-card">
+        <div class="primer-label">Primer 4 nt</div>
+        <svg width="100%" viewBox="0 0 320 100">
+          ${PRIMER.map((b, i) => {
+            const px = 28 + i * 70;
+            return `
+              <rect x="${px-18}" y="20" width="36" height="28" rx="5" fill="${COLORS[b]}"/>
+              <text x="${px}" y="40" text-anchor="middle" fill="white" font-weight="800" font-size="18" font-family="Fraunces">${b}</text>
+              <line x1="${px}" y1="48" x2="${px}" y2="64" stroke="#1c1612" stroke-width="1.8"/>
+              <polygon points="${px-16},${64} ${px+16},${64} ${px+13},${80} ${px-13},${80}" fill="#cfe1ee" stroke="#3b6b8a" stroke-width="1.5"/>
+              ${i < PRIMER.length - 1 ? `<line x1="${px+16}" y1="${72}" x2="${px+54}" y2="${72}" stroke="#1c1612" stroke-width="1.5"/>
+              <circle cx="${px+35}" cy="${72}" r="6" fill="#d97706"/>
+              <text x="${px+35}" y="${75}" text-anchor="middle" fill="white" font-weight="700" font-size="8" font-family="Fraunces">P</text>` : ''}
+            `;
+          }).join('')}
+          <!-- 5' phosphate at very start -->
+          <circle cx="10" cy="72" r="6" fill="#d97706"/>
+          <text x="10" y="75" text-anchor="middle" fill="white" font-weight="700" font-size="8" font-family="Fraunces">P</text>
+          <line x1="16" y1="72" x2="${28-16}" y2="72" stroke="#1c1612" stroke-width="1.5"/>
+          <!-- 3'-OH at end -->
+          <line x1="${28+(PRIMER.length-1)*70+16}" y1="72" x2="${28+(PRIMER.length-1)*70+34}" y2="72" stroke="#dc2626" stroke-width="2"/>
+          <text x="${28+(PRIMER.length-1)*70+44}" y="76" text-anchor="middle" font-size="10" fill="#dc2626" font-weight="700" font-family="JetBrains Mono">OH</text>
+        </svg>
+        <div class="primer-seq"><span class="end-mark">5′-P-</span>${PRIMER.join('-')}<span class="oh-mark">-OH 3′</span></div>
+      </div>
+    `;
+    document.getElementById('primer-card').addEventListener('pointerdown', startPrimerDrag);
+  } else {
+    title.textContent = state.phase === 'done' ? 'Síntese completa' : 'Etapa 2 · dNTPs';
+    if (state.phase === 'done') {
+      info.innerHTML = `<strong style="color:var(--teal-deep)">✓ FITA COMPLETA</strong><br>Todos os ${TEMPLATE.length} nucleotídeos foram incorporados. Pareamento correto em todas as posições.`;
+      content.innerHTML = '';
+    } else {
+      const expectedBase = complement(TEMPLATE[state.newStrand.length]);
+      info.innerHTML = `<strong>PRÓXIMA POSIÇÃO</strong><br>Base molde no sítio ativo: <em style="color:${COLORS[TEMPLATE[state.newStrand.length]]};font-style:normal;font-weight:700">${TEMPLATE[state.newStrand.length]}</em>. A polimerase só aceita o dNTP complementar.`;
+      content.innerHTML = `
+        <div class="dntp-grid">
+          ${['A','T','G','C'].map(b => `
+            <div class="dntp-card" data-base="${b}">
+              <svg width="84" height="100" viewBox="0 0 84 100">
+                <circle cx="14" cy="14" r="8" fill="#d97706" opacity="0.5"/>
+                <text x="14" y="17" text-anchor="middle" fill="white" font-weight="700" font-size="8" font-family="Fraunces">P</text>
+                <text x="14" y="6" text-anchor="middle" fill="#b45309" font-size="7" font-family="JetBrains Mono" font-weight="700">γ</text>
+                <circle cx="32" cy="14" r="8" fill="#d97706" opacity="0.72"/>
+                <text x="32" y="17" text-anchor="middle" fill="white" font-weight="700" font-size="8" font-family="Fraunces">P</text>
+                <text x="32" y="6" text-anchor="middle" fill="#b45309" font-size="7" font-family="JetBrains Mono" font-weight="700">β</text>
+                <circle cx="50" cy="14" r="8" fill="#d97706"/>
+                <text x="50" y="17" text-anchor="middle" fill="white" font-weight="700" font-size="8" font-family="Fraunces">P</text>
+                <text x="50" y="6" text-anchor="middle" fill="#b45309" font-size="7" font-family="JetBrains Mono" font-weight="700">α</text>
+                <line x1="50" y1="22" x2="50" y2="32" stroke="#1c1612" stroke-width="1.4"/>
+                <polygon points="50,32 66,44 60,62 40,62 34,44" fill="#cfe1ee" stroke="#3b6b8a" stroke-width="1.3"/>
+                <line x1="34" y1="48" x2="28" y2="48" stroke="#1c1612" stroke-width="1.4"/>
+                <rect x="2" y="38" width="26" height="20" rx="4" fill="${COLORS[b]}"/>
+                <text x="15" y="53" text-anchor="middle" fill="white" font-weight="800" font-size="13" font-family="Fraunces">${b}</text>
+                <line x1="60" y1="62" x2="68" y2="74" stroke="#dc2626" stroke-width="1.6"/>
+                <text x="76" y="78" text-anchor="middle" font-size="8" fill="#dc2626" font-weight="700" font-family="JetBrains Mono">OH</text>
+              </svg>
+              <div class="dntp-label">d${b}TP</div>
+              <div class="dntp-name">${FULLNAMES[b]}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      document.querySelectorAll('.dntp-card').forEach(card => {
+        card.addEventListener('pointerdown', e => startDntpDrag(e, card.dataset.base, card));
+      });
+    }
+  }
+}
+
+// ============ DRAG: PRIMER ============
+let drag = null;
+
+function startPrimerDrag(e) {
+  if (isAnimating) return;
+  e.preventDefault();
+  const card = e.currentTarget;
+  card.setPointerCapture(e.pointerId);
+  card.classList.add('dragging');
+
+  const ghost = document.createElement('div');
+  ghost.className = 'ghost';
+  ghost.style.width = '340px';
+  ghost.innerHTML = card.querySelector('svg').outerHTML;
+  document.body.appendChild(ghost);
+
+  drag = {
+    type: 'primer',
+    card,
+    ghost,
+    pointerId: e.pointerId,
+    onMove: ev => movePrimerDrag(ev),
+    onUp: ev => endPrimerDrag(ev)
+  };
+  card.addEventListener('pointermove', drag.onMove);
+  card.addEventListener('pointerup', drag.onUp);
+  card.addEventListener('pointercancel', drag.onUp);
+  movePrimerDrag(e);
+}
+
+function getSlotScreenPos(i) {
+  const svg = document.getElementById('duplex-svg');
+  const rect = svg.getBoundingClientRect();
+  const vbW = 860;
+  const vbH = 300;
+  const scaleX = rect.width / vbW;
+  const scaleY = rect.height / vbH;
+  return {
+    x: rect.left + cx(i) * scaleX,
+    y: rect.top + BASE_BOT_Y * scaleY,
+    scaleX, scaleY
+  };
+}
+
+function movePrimerDrag(e) {
+  if (!drag || drag.type !== 'primer') return;
+  drag.ghost.style.left = (e.clientX - 170) + 'px';
+  drag.ghost.style.top = (e.clientY - 50) + 'px';
+  // Snap target: position 0 of slots
+  const target = getSlotScreenPos(1.5); // center of first 4 slots is between i=1 and i=2
+  const dist = Math.hypot(target.x - e.clientX, target.y - e.clientY);
+  if (dist < 120) drag.ghost.classList.add('snap-near');
+  else drag.ghost.classList.remove('snap-near');
+}
+
+function endPrimerDrag(e) {
+  if (!drag || drag.type !== 'primer') return;
+  const card = drag.card;
+  const ghost = drag.ghost;
+  card.removeEventListener('pointermove', drag.onMove);
+  card.removeEventListener('pointerup', drag.onUp);
+  card.removeEventListener('pointercancel', drag.onUp);
+  card.classList.remove('dragging');
+
+  const target = getSlotScreenPos(1.5);
+  const dist = Math.hypot(target.x - e.clientX, target.y - e.clientY);
+
+  if (dist < 120) {
+    // SNAP — place primer
+    isAnimating = true;
+    const finalLeft = target.x - 170;
+    const finalTop = target.y - 50;
+    ghost.style.transition = 'left 0.4s ease, top 0.4s ease, transform 0.4s ease';
+    ghost.style.left = finalLeft + 'px';
+    ghost.style.top = finalTop + 'px';
+    ghost.classList.remove('snap-near');
+    setTimeout(() => {
+      state.newStrand = [...PRIMER];
+      state.phase = 'extend';
+      render();
+      ghost.remove();
+      // Flash H bonds appearing
+      animateHBondsFormation();
+      isAnimating = false;
+      showToast('✓ Primer pareado. <strong>' + getPrimerHBonds() + ' pontes de H</strong> formadas. Agora a polimerase pode estender a partir da <strong>3′-OH livre</strong>.', 'win');
+    }, 420);
+  } else {
+    ghost.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    ghost.style.opacity = '0';
+    ghost.style.transform = 'scale(0.7)';
+    setTimeout(() => ghost.remove(), 300);
+    showToast('Aproxime o primer da região complementar da fita molde (esquerda do duplex).', 'err');
+  }
+  drag = null;
+}
+
+function getPrimerHBonds() {
+  let n = 0;
+  for (let i = 0; i < PRIMER.length; i++) n += bonds(TEMPLATE[i], PRIMER[i]);
+  return n;
+}
+
+function animateHBondsFormation() {
+  document.querySelectorAll('.hbond').forEach((g, idx) => {
+    g.style.opacity = '0';
+    setTimeout(() => {
+      g.style.transition = 'opacity 0.4s ease';
+      g.style.opacity = '1';
+    }, idx * 120);
+  });
+}
+
+// ============ DRAG: dNTP ============
+function startDntpDrag(e, base, card) {
+  if (isAnimating || state.phase !== 'extend') return;
+  e.preventDefault();
+  card.setPointerCapture(e.pointerId);
+  card.classList.add('dragging');
+
+  const ghost = document.createElement('div');
+  ghost.className = 'ghost';
+  ghost.innerHTML = card.querySelector('svg').outerHTML;
+  document.body.appendChild(ghost);
+
+  drag = {
+    type: 'dntp',
+    base,
+    card,
+    ghost,
+    pointerId: e.pointerId,
+    onMove: ev => moveDntpDrag(ev),
+    onUp: ev => endDntpDrag(ev)
+  };
+  card.addEventListener('pointermove', drag.onMove);
+  card.addEventListener('pointerup', drag.onUp);
+  card.addEventListener('pointercancel', drag.onUp);
+  moveDntpDrag(e);
+}
+
+function moveDntpDrag(e) {
+  if (!drag || drag.type !== 'dntp') return;
+  drag.ghost.style.left = (e.clientX - 42) + 'px';
+  drag.ghost.style.top = (e.clientY - 70) + 'px';
+  const target = getSlotScreenPos(state.newStrand.length);
+  const dist = Math.hypot(target.x - e.clientX, target.y - e.clientY);
+  if (dist < 80) drag.ghost.classList.add('snap-near');
+  else drag.ghost.classList.remove('snap-near');
+}
+
+function endDntpDrag(e) {
+  if (!drag || drag.type !== 'dntp') return;
+  const card = drag.card;
+  const ghost = drag.ghost;
+  const base = drag.base;
+  card.removeEventListener('pointermove', drag.onMove);
+  card.removeEventListener('pointerup', drag.onUp);
+  card.removeEventListener('pointercancel', drag.onUp);
+  card.classList.remove('dragging');
+
+  const i = state.newStrand.length;
+  const target = getSlotScreenPos(i);
+  const dist = Math.hypot(target.x - e.clientX, target.y - e.clientY);
+
+  if (dist < 80) {
+    const expected = complement(TEMPLATE[i]);
+    if (base === expected) {
+      animateDntpIncorporation(base, ghost, target);
+    } else {
+      animateDntpRejection(base, expected, ghost);
+    }
+  } else {
+    ghost.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    ghost.style.opacity = '0';
+    ghost.style.transform = 'scale(0.7)';
+    setTimeout(() => ghost.remove(), 300);
+  }
+  drag = null;
+}
+
+function animateDntpIncorporation(base, ghost, target) {
+  isAnimating = true;
+  ghost.style.transition = 'left 0.35s cubic-bezier(0.3, 0.7, 0.2, 1), top 0.35s cubic-bezier(0.3, 0.7, 0.2, 1)';
+  ghost.style.left = (target.x - 42) + 'px';
+  ghost.style.top = (target.y - 70) + 'px';
+  ghost.classList.remove('snap-near');
+
+  setTimeout(() => {
+    const lab = document.getElementById('lab-area');
+    const labRect = lab.getBoundingClientRect();
+    // bond flash
+    const flash = document.createElement('div');
+    flash.className = 'bond-flash';
+    flash.style.left = (target.x - labRect.left) + 'px';
+    flash.style.top = (target.y - labRect.top + 50) + 'px';
+    lab.appendChild(flash);
+    setTimeout(() => flash.remove(), 700);
+    // PPi
+    const ppi = document.createElement('div');
+    ppi.className = 'ppi-particle';
+    ppi.innerHTML = 'PPi ⤴';
+    ppi.style.left = (target.x - labRect.left - 30) + 'px';
+    ppi.style.top = (target.y - labRect.top - 30) + 'px';
+    lab.appendChild(ppi);
+    setTimeout(() => ppi.remove(), 1500);
+    // Fade out β & γ on ghost
+    const svg = ghost.querySelector('svg');
+    if (svg) {
+      const circles = svg.querySelectorAll('circle');
+      const texts = svg.querySelectorAll('text');
+      [0,1].forEach(i => {
+        if (circles[i]) {
+          circles[i].style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+          circles[i].style.opacity = '0';
+          circles[i].style.transform = 'translate(-15px, -25px)';
+        }
+      });
+      [0,1,2,3].forEach(i => {
+        if (texts[i]) {
+          texts[i].style.transition = 'opacity 0.4s ease';
+          texts[i].style.opacity = '0';
+        }
+      });
+    }
+  }, 360);
+
+  setTimeout(() => {
+    state.newStrand.push(base);
+    if (state.newStrand.length === TEMPLATE.length) state.phase = 'done';
+    render();
+    ghost.remove();
+    isAnimating = false;
+    const n = bonds(TEMPLATE[state.newStrand.length - 1], base);
+    const pairBase = TEMPLATE[state.newStrand.length - 1];
+    if (state.phase === 'done') {
+      showToast(`✓✓ <strong>FITA COMPLETA!</strong> Última ligação fosfodiéster formada. ${n} pontes de H entre ${base} e ${pairBase}.`, 'win');
+    } else {
+      showToast(`✓ <strong>${base} ↔ ${pairBase}</strong> · ${n} pontes de H · PPi liberado · nova ligação fosfodiéster`, 'win');
+    }
+  }, 1100);
+}
+
+function animateDntpRejection(wrongBase, expected, ghost) {
+  isAnimating = true;
+  ghost.classList.add('mismatch');
+  setTimeout(() => {
+    ghost.style.transition = 'left 0.4s ease, top 0.4s ease, opacity 0.4s ease, transform 0.4s ease';
+    const start = ghost.getBoundingClientRect();
+    ghost.style.left = (start.left + 30) + 'px';
+    ghost.style.top = (start.top - 200) + 'px';
+    ghost.style.opacity = '0';
+    ghost.style.transform = 'scale(0.6) rotate(45deg)';
+    setTimeout(() => {
+      ghost.remove();
+      isAnimating = false;
+    }, 420);
+  }, 380);
+  const pairBase = TEMPLATE[state.newStrand.length];
+  const wrongN = bonds(pairBase, wrongBase);
+  const reason = wrongN === 0 
+    ? `<strong>${wrongBase}</strong> e <strong>${pairBase}</strong> não fazem pareamento Watson-Crick.`
+    : `geometria errada — não cabe no sítio ativo.`;
+  showToast(`✗ <strong>Mismatch</strong> rejeitado pela polimerase. ${reason} A base molde é <strong>${pairBase}</strong>; precisa de <strong>d${expected}TP</strong>.`, 'err');
+}
+
+// ============ ACTIONS ============
+function undo() {
+  if (isAnimating) return;
+  if (state.phase === 'primer') {
+    showToast('Nada a desfazer ainda.', 'err');
+    return;
+  }
+  if (state.newStrand.length === PRIMER.length) {
+    // remove primer
+    state.newStrand = [];
+    state.phase = 'primer';
+  } else {
+    state.newStrand.pop();
+    if (state.phase === 'done') state.phase = 'extend';
+  }
+  render();
+}
+
+function reset() {
+  if (isAnimating) return;
+  state = { phase: 'primer', newStrand: [] };
+  render();
+  showToast('Sistema reiniciado. Posicione o primer.');
+}
+
+function showToast(html, kind) {
+  const t = document.getElementById('toast');
+  t.innerHTML = html;
+  t.classList.remove('err','win');
+  if (kind === 'err') t.classList.add('err');
+  if (kind === 'win') t.classList.add('win');
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 3800);
+}
+
+// ============ INIT ============
+document.addEventListener('DOMContentLoaded', () => {
+  render();
+});
+</script>
+
+<style id="__fitcss">
+  html,body{height:100%!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important;}
+  #__fit{position:fixed;left:0;top:0;width:1440px;transform-origin:0 0;}
+  .ghost{transform:scale(var(--fit-scale,1))!important;transform-origin:top left!important;}
+</style>
+<script>
+(function(){
+  var DW=1440;
+  function build(){
+    var b=document.body;
+    if(document.getElementById('__fit'))return document.getElementById('__fit');
+    var fit=document.createElement('div');fit.id='__fit';
+    var kids=[];for(var i=0;i<b.childNodes.length;i++)kids.push(b.childNodes[i]);
+    kids.forEach(function(n){ if(n.nodeType===1 && n.tagName==='SCRIPT') return; if(n.nodeType===1 && n.id==='__fitcss') return; fit.appendChild(n); });
+    b.appendChild(fit);
+    return fit;
+  }
+  var fit=build();
+  function doFit(){
+    if(!fit)return;
+    fit.style.transform='none';
+    var DH=fit.scrollHeight||1;
+    var vw=document.documentElement.clientWidth||window.innerWidth;
+    var vh=document.documentElement.clientHeight||window.innerHeight;
+    var s=Math.min(vw/DW, vh/DH);
+    if(!isFinite(s)||s<=0)s=1;
+    var w=DW*s, h=DH*s, ox=(vw-w)/2, oy=(vh-h)/2;
+    fit.style.transform='translate('+ox+'px,'+oy+'px) scale('+s+')';
+    document.documentElement.style.setProperty('--fit-scale', s);
+  }
+  window.addEventListener('resize',doFit);
+  window.addEventListener('load',doFit);
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(doFit);}
+  doFit();setTimeout(doFit,150);setTimeout(doFit,500);setTimeout(doFit,1200);
+})();
+</script>
+
+</body>
+</html>

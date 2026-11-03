@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A forquilha de replicação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-darker: #0e0b08;
+  --ink: #2a1f14; --ink-soft: #4a3826; --cream: #f5ecd8;
+  --amber-deep: #b8893f; --kraft-edge: #8a6d44; --highlight: #f0c674;
+  --helicase: #2f6690; --helicase-hi: #3a86c8;
+  --topo: #7c3aed; --topo-hi: #9560f0;
+  --primase: #5f8a3a; --primase-hi: #79ab4e;
+  --pol: #a8472a; --pol-hi: #c8603f;
+  --ligase: #c79a3a; --ligase-hi: #e0b850;
+  --tmpl: #3f5d72;        /* template strand A (blue-grey) */
+  --tmpl2: #6e5a44;       /* template strand B (brown) */
+  --new-strand: #b0472b;  /* new strand terracotta */
+  --primer: #d9a14a;
+  --rung: #8a96a0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg-darker);
+  font-family: 'Crimson Text', Georgia, serif;
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 18px; overflow-x: hidden; user-select: none; -webkit-user-select: none;
+}
+.parchment {
+  position: relative; width: 100%; max-width: 1280px;
+  background:
+    radial-gradient(ellipse at 25% 15%, rgba(217,189,146,0.55) 0%, transparent 60%),
+    radial-gradient(ellipse at 75% 85%, rgba(150,118,78,0.45) 0%, transparent 55%),
+    linear-gradient(135deg, #c9a876 0%, #b89058 50%, #a8804e 100%);
+  border-radius: 8px; padding: 28px 36px 32px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.75), inset 0 0 140px rgba(110,82,46,0.4);
+}
+.parchment::before { content:''; position:absolute; inset:13px; border:1.5px solid rgba(80,60,34,0.5); border-radius:4px; pointer-events:none; }
+.parchment::after {
+  content:''; position:absolute; inset:0;
+  background-image: repeating-linear-gradient(0deg, rgba(110,82,46,0.03) 0px, transparent 2px, transparent 4px), repeating-linear-gradient(90deg, rgba(110,82,46,0.025) 0px, transparent 3px, transparent 6px);
+  border-radius:8px; pointer-events:none; mix-blend-mode:multiply;
+}
+.content { position: relative; z-index: 2; }
+.eyebrow { text-align:center; font-style:italic; font-size:clamp(13px,1.5vw,17px); color:var(--ink-soft); margin-bottom:2px; }
+h1 { font-family:'Cinzel',serif; font-weight:900; text-align:center; color:var(--ink); font-size:clamp(22px,3.4vw,38px); line-height:1.05; text-shadow:0 1px 0 rgba(245,236,216,0.4); margin-bottom:4px; }
+.subtitle { text-align:center; font-style:italic; font-size:clamp(12px,1.4vw,15px); color:var(--ink-soft); margin-bottom:8px; }
+.divider { text-align:center; color:var(--amber-deep); font-size:15px; margin-bottom:10px; letter-spacing:4px; }
+
+.layout { display:grid; grid-template-columns: 1fr 268px; gap:18px; align-items:start; }
+@media (max-width: 860px){ .layout{ grid-template-columns:1fr; } }
+
+.stage { position:relative; background:linear-gradient(180deg, rgba(40,28,14,0.05), rgba(40,28,14,0.12)); border:1.5px solid rgba(80,60,34,0.3); border-radius:8px; padding:6px; }
+#fork-svg { width:100%; height:auto; display:block; }
+
+.enzymes { display:flex; flex-direction:column; gap:7px; }
+.enzyme-btn {
+  text-align:left; border:2px solid var(--amber-deep); border-radius:9px;
+  background:linear-gradient(180deg, rgba(245,236,216,0.55), rgba(224,184,120,0.32));
+  padding:8px 11px; cursor:pointer; transition:all 0.15s ease;
+  display:flex; align-items:center; gap:9px; box-shadow:0 2px 0 rgba(110,82,46,0.4);
+}
+.enzyme-btn:hover { transform:translateX(2px); }
+.enzyme-btn .num { font-family:'Cinzel',serif; font-weight:900; font-size:14px; color:var(--amber-deep); width:14px; text-align:center; flex-shrink:0; }
+.enzyme-btn .swatch { width:15px; height:15px; border-radius:4px; flex-shrink:0; border:1.5px solid rgba(0,0,0,0.25); }
+.enzyme-btn .nm { font-family:'Cinzel',serif; font-weight:700; font-size:13px; color:var(--ink); line-height:1.1; }
+.enzyme-btn.active { color:#fff; box-shadow:0 0 0 2px var(--highlight), 0 3px 10px rgba(0,0,0,0.4); transform:translateX(3px); }
+.enzyme-btn.active .nm, .enzyme-btn.active .num { color:#fff; }
+.enzyme-btn.active.e-helicase{ background:var(--helicase); border-color:#1d3a52; }
+.enzyme-btn.active.e-topo{ background:var(--topo); border-color:#4c1d95; }
+.enzyme-btn.active.e-primase{ background:var(--primase); border-color:#3a4a1a; }
+.enzyme-btn.active.e-pol{ background:var(--pol); border-color:#5a2810; }
+.enzyme-btn.active.e-ligase{ background:var(--ligase); border-color:#7a5a1a; }
+
+.readout {
+  margin-top:10px; min-height:58px;
+  background:linear-gradient(180deg, rgba(20,14,8,0.88), rgba(30,22,12,0.92));
+  border:1.5px solid var(--kraft-edge); border-radius:8px;
+  padding:11px 15px; color:var(--cream);
+  font-size:13px; line-height:1.45;
+}
+.readout strong { color:var(--highlight); font-weight:600; }
+.readout .none { font-style:italic; opacity:0.85; }
+
+.hint { text-align:center; font-style:italic; font-size:clamp(12px,1.4vw,14.5px); color:var(--ink-soft); margin-top:10px; }
+.hint strong { font-style:normal; color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="parchment">
+<div class="content">
+  <p class="eyebrow">A forquilha de replicação: tudo junto</p>
+  <h1>A equipe da célula, trabalhando junta</h1>
+  <p class="subtitle">Visão integrada da maquinaria celular</p>
+  <div class="divider">&#10086;</div>
+
+  <div class="layout">
+    <div class="stage">
+      <svg id="fork-svg" viewBox="0 0 720 470" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div>
+      <div class="enzymes">
+        <button class="enzyme-btn e-helicase" data-e="helicase"><span class="num">1</span><span class="swatch" style="background:var(--helicase)"></span><span class="nm">Helicase</span></button>
+        <button class="enzyme-btn e-topo" data-e="topo"><span class="num">2</span><span class="swatch" style="background:var(--topo)"></span><span class="nm">Topoisomerase / girase</span></button>
+        <button class="enzyme-btn e-primase" data-e="primase"><span class="num">3</span><span class="swatch" style="background:var(--primase)"></span><span class="nm">Primase</span></button>
+        <button class="enzyme-btn e-pol" data-e="pol"><span class="num">4</span><span class="swatch" style="background:var(--pol)"></span><span class="nm">DNA polimerase</span></button>
+        <button class="enzyme-btn e-ligase" data-e="ligase"><span class="num">5</span><span class="swatch" style="background:var(--ligase)"></span><span class="nm">Ligase</span></button>
+      </div>
+      <div class="readout" id="readout">
+        <span class="none">Clique em uma enzima para destacá-la na forquilha e ver sua função.</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="hint" id="hint"><strong>As duas fitas-molde são antiparalelas</strong> — por isso a fita líder é copiada de forma contínua, e a atrasada, em fragmentos.</p>
+</div>
+</div>
+
+<script>
+const svg = document.getElementById('fork-svg');
+const readout = document.getElementById('readout');
+let active = null;
+
+const INFO = {
+  helicase: '<strong>Helicase.</strong> Abre a dupla-fita rompendo as pontes de hidrogênio, no vértice da forquilha. É o que torna as bases acessíveis.',
+  topo: '<strong>Topoisomerase / girase.</strong> Alivia a tensão de torção que se acumula à frente da forquilha conforme a hélice é desenrolada.',
+  primase: '<strong>Primase.</strong> Sintetiza o primer de RNA que fornece a primeira 3′-OH. Sem ele, a polimerase não tem de onde partir.',
+  pol: '<strong>DNA polimerase.</strong> Estende a nova fita a partir do primer, sempre 5′→3′. Na fita líder é contínua; na atrasada, em fragmentos.',
+  ligase: '<strong>Ligase.</strong> Une os fragmentos de Okazaki da fita atrasada, fechando as ligações fosfodiéster que faltam.'
+};
+
+// ===================== GEOMETRY (viewBox 720 x 470) =====================
+const FX = 250, FY = 235;       // fork vertex (left-center)
+const HELIX_X0 = 30;
+const ARM_LEN = 410;            // horizontal reach of the open arms
+const ARM_DROP = 150;           // vertical spread of each arm
+
+function helixClosed(){
+  const steps=64, turns=3.4, amp=26;
+  const p1=[],p2=[];
+  for(let i=0;i<=steps;i++){ const t=i/steps, x=HELIX_X0+(FX-HELIX_X0)*t, ph=t*turns*Math.PI*2;
+    p1.push([x,FY+Math.sin(ph)*amp]); p2.push([x,FY+Math.sin(ph+Math.PI)*amp]); }
+  let rungs='';
+  for(let i=3;i<steps;i+=4){ rungs+=`<line x1="${p1[i][0].toFixed(1)}" y1="${p1[i][1].toFixed(1)}" x2="${p2[i][0].toFixed(1)}" y2="${p2[i][1].toFixed(1)}" stroke="var(--rung)" stroke-width="2.5" opacity="0.45"/>`; }
+  const path=(p)=>'M '+p.map(q=>q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' L ');
+  return rungs+`<path d="${path(p2)}" stroke="var(--tmpl2)" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.92"/>`+
+               `<path d="${path(p1)}" stroke="var(--tmpl)" stroke-width="7" fill="none" stroke-linecap="round"/>`;
+}
+function armPts(dir){ const pts=[],n=16; for(let i=0;i<=n;i++){ const t=i/n; pts.push([FX+16+t*ARM_LEN, FY+dir*(24+t*ARM_DROP)]); } return pts; }
+
+function enzyme(cx,cy,r,fill,stroke,label,on){
+  let s=`<g ${on?'filter="url(#glow)"':''}>`;
+  s+=`<circle cx="${cx-r*0.46}" cy="${cy+r*0.1}" r="${r*0.72}" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/>`;
+  s+=`<circle cx="${cx+r*0.46}" cy="${cy+r*0.1}" r="${r*0.72}" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/>`;
+  s+=`<circle cx="${cx}" cy="${cy-r*0.4}" r="${r*0.68}" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/>`;
+  s+=`<ellipse cx="${cx-r*0.28}" cy="${cy-r*0.18}" rx="${r*0.3}" ry="${r*0.2}" fill="rgba(255,255,255,0.28)"/>`;
+  if(label) s+=`<text x="${cx}" y="${cy+r*0.2}" text-anchor="middle" font-family="JetBrains Mono" font-size="${Math.max(10,r*0.36)}" font-weight="700" fill="#fff">${label}</text>`;
+  s+=`</g>`; return s;
+}
+function arrow(x0,y0,x1,y1,color,w){
+  const a=Math.atan2(y1-y0,x1-x0),h=10;
+  const a1x=x1-h*Math.cos(a-Math.PI/6),a1y=y1-h*Math.sin(a-Math.PI/6);
+  const a2x=x1-h*Math.cos(a+Math.PI/6),a2y=y1-h*Math.sin(a+Math.PI/6);
+  return `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="${color}" stroke-width="${w||3}"/>`+
+         `<polygon points="${x1},${y1} ${a1x.toFixed(1)},${a1y.toFixed(1)} ${a2x.toFixed(1)},${a2y.toFixed(1)}" fill="${color}"/>`;
+}
+function strandPath(pts,color,w,dash){
+  return `<path d="M ${pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')}" stroke="${color}" stroke-width="${w}" fill="none" stroke-linecap="round" ${dash?`stroke-dasharray="${dash}"`:''}/>`;
+}
+
+function render(){
+  const hl=(k)=>active===k;
+  let s=`<defs><filter id="glow" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+  const lead=armPts(-1), lag=armPts(1);
+
+  s+=helixClosed();
+  s+=`<text x="22" y="${FY-26}" text-anchor="end" font-family="JetBrains Mono" font-size="15" font-weight="700" fill="var(--tmpl)">5′</text>`;
+  s+=`<text x="22" y="${FY+34}" text-anchor="end" font-family="JetBrains Mono" font-size="15" font-weight="700" fill="var(--tmpl2)">3′</text>`;
+  s+=`<text x="${(HELIX_X0+FX)/2}" y="${FY+56}" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#5a4428" opacity="0.85">DNA parental</text>`;
+
+  // topoisomerase ring
+  { const on=hl('topo'); const tx=155;
+    s+=`<g ${on?'filter="url(#glow)"':''}><ellipse cx="${tx}" cy="${FY}" rx="22" ry="38" fill="none" stroke="${on?'var(--topo-hi)':'#9a7ab8'}" stroke-width="12" opacity="${on?1:0.7}"/><ellipse cx="${tx}" cy="${FY}" rx="22" ry="38" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="3"/></g>`;
+    if(on) s+=`<text x="${tx}" y="${FY-48}" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="700" fill="var(--topo-hi)">desfaz a torção</text>`;
+  }
+
+  // open arms
+  s+=strandPath(lead,'var(--tmpl)',6.5);
+  s+=strandPath(lag,'var(--tmpl2)',6.5);
+  // polarity labels (antiparallel) — only at the strand ENDS.
+  // New leading strand grows 5'(right)->3'(left, toward fork), so its template runs
+  // 3'(right tip) ... 5'(left/parental). New lagging fragments grow 5'(left)->3'(right),
+  // so the lagging template runs 5'(left/parental) ... 3'(right tip).
+  s+=`<text x="${lead[16][0]+12}" y="${lead[16][1]-4}" font-family="JetBrains Mono" font-size="15" font-weight="700" fill="var(--tmpl)">3′</text>`;
+  s+=`<text x="${lag[16][0]+12}" y="${lag[16][1]+8}" font-family="JetBrains Mono" font-size="15" font-weight="700" fill="var(--tmpl2)">5′</text>`;
+
+  // helicase + broken H-bonds
+  { const on=hl('helicase');
+    for(let i=0;i<4;i++){ const x=FX+14+i*11; const sp=10+i*9; s+=`<line x1="${x}" y1="${FY-sp}" x2="${x}" y2="${FY+sp}" stroke="${on?'var(--helicase-hi)':'#8a96a0'}" stroke-width="2" stroke-dasharray="2,3" opacity="${on?0.9:0.45}"/>`; }
+    s+=enzyme(FX,FY,30,on?'var(--helicase-hi)':'var(--helicase)','#1d3a52','hel',on);
+    if(on) s+=`<text x="${FX+46}" y="${FY-52}" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="700" fill="var(--helicase-hi)">rompe pontes de H</text>`;
+  }
+
+  // LEADING new strand: primer at the RIGHT tip; new strand grows leftward toward the
+  // fork vertex (following the fork). Polymerase sits just RIGHT of the vertex (open side).
+  { const on=hl('pol');
+    const ln=lead.map(p=>[p[0],p[1]+14]);
+    // primer at the right tip (5' start)
+    s+=strandPath([ln[15],ln[16]],'var(--primer)',6);
+    // continuous new DNA from the tip back toward the vertex
+    s+=strandPath(ln.slice(2,16),'var(--new-strand)',5);
+    // synthesis direction arrow: from right (5') toward the vertex/left (3')
+    s+=arrow(ln[12][0]-6, ln[12][1]+18, ln[5][0]-6, ln[5][1]+18, on?'var(--pol-hi)':'#9a4a2a',3);
+    s+=`<text x="${ln[9][0]}" y="${ln[9][1]+34}" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="700" fill="${on?'var(--pol-hi)':'#8a5a3a'}">5′→3′ contínua</text>`;
+    // polymerase just right of the vertex, on the opened template
+    s+=enzyme(ln[2][0],ln[2][1],26,on?'var(--pol-hi)':'var(--pol)','#5a2810','pol',on);
+  }
+
+  // LAGGING strand: Okazaki fragments. Each fragment's primer is on the LEFT (near the
+  // fork = its 5' start); the fragment grows 5'->3' RIGHTWARD, away from the fork.
+  // A new primer is laid near the vertex each time the fork opens more.
+  { const onPol=hl('pol'), onPrim=hl('primase'), onLig=hl('ligase');
+    const ln=lag.map(p=>[p[0],p[1]-14]);
+    // fragments defined [nearFork(left,5'), awayFork(right,3')] indices
+    const frags=[[2,6],[6,10],[10,14]];
+    frags.forEach((fr,idx)=>{
+      const nearFork=ln[fr[0]], awayFork=ln[fr[1]];
+      // primer (amber) at the LEFT/near-fork end = the 5' start of the fragment
+      s+=strandPath([nearFork,ln[fr[0]+1]],'var(--primer)',6);
+      // new DNA from just-after-primer growing rightward (away from fork)
+      s+=strandPath(ln.slice(fr[0]+1,fr[1]+1),'var(--new-strand)',5);
+      // synthesis arrow: 5'(near fork, left) -> 3'(away, right)
+      s+=arrow(ln[fr[0]+1][0]+6, ln[fr[0]+1][1]+16, awayFork[0]+6, awayFork[1]+16, onPol?'var(--pol-hi)':'#9a4a2a',2.5);
+      // ligase gap between this fragment's right (3') end and the next fragment's start
+      if(idx<frags.length-1 && onLig){ const g=ln[fr[1]]; s+=`<circle cx="${g[0]}" cy="${g[1]}" r="8" fill="none" stroke="var(--ligase-hi)" stroke-width="3"><animate attributeName="r" values="6;11;6" dur="1.2s" repeatCount="indefinite"/></circle>`; }
+    });
+    s+=`<text x="${ln[8][0]}" y="${ln[8][1]+36}" text-anchor="middle" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="#8a5a3a">fragmentos de Okazaki</text>`;
+    // primase laying a fresh primer near the fork (left end of the fork-most fragment)
+    if(onPrim){ const pm=ln[2]; s+=enzyme(pm[0],pm[1],22,'var(--primase-hi)','#3a4a1a','prim',true);
+      s+=`<text x="${pm[0]+8}" y="${pm[1]-30}" text-anchor="middle" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="var(--primase-hi)">põe um novo primer</text>`; }
+    if(onPol){ const pf=ln[8]; s+=enzyme(pf[0],pf[1],24,'var(--pol-hi)','#5a2810','pol',true); }
+    if(onLig){ const lg=ln[6]; s+=enzyme(lg[0],lg[1],22,'var(--ligase-hi)','#7a5a1a','lig',true); }
+  }
+
+  // fork advance arrow (toward the closed DNA on the left)
+  s+=arrow(FX+90,28,FX+20,28,'#6a4f2c',3);
+  s+=`<text x="${FX+150}" y="22" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="700" fill="#6a4f2c">a forquilha avança</text>`;
+
+  // strand identity
+  s+=`<text x="${lead[16][0]-30}" y="${lead[16][1]-30}" text-anchor="middle" font-family="Cinzel" font-size="14" font-weight="700" fill="var(--ink)">FITA LÍDER</text>`;
+  s+=`<text x="${lag[16][0]-40}" y="${lag[16][1]+34}" text-anchor="middle" font-family="Cinzel" font-size="14" font-weight="700" fill="var(--ink)">FITA ATRASADA</text>`;
+
+  svg.innerHTML=s;
+}
+
+function setActive(k){
+  active=(active===k)?null:k;
+  document.querySelectorAll('.enzyme-btn').forEach(b=>b.classList.toggle('active', b.dataset.e===active));
+  readout.innerHTML = active ? INFO[active] : '<span class="none">Clique em uma enzima para destacá-la na forquilha e ver sua função.</span>';
+  render();
+}
+document.querySelectorAll('.enzyme-btn').forEach(b=>b.addEventListener('click',()=>setActive(b.dataset.e)));
+render();
+</script>
+
+<style id="__fitcss">
+  html,body{height:100%!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important;}
+  #__fit{position:fixed;left:0;top:0;width:1280px;transform-origin:0 0;}
+  .ghost{transform:scale(var(--fit-scale,1))!important;transform-origin:top left!important;}
+</style>
+<script>
+(function(){
+  var DW=1280;
+  function build(){
+    var b=document.body;
+    if(document.getElementById('__fit'))return document.getElementById('__fit');
+    var fit=document.createElement('div');fit.id='__fit';
+    var kids=[];for(var i=0;i<b.childNodes.length;i++)kids.push(b.childNodes[i]);
+    kids.forEach(function(n){ if(n.nodeType===1 && n.tagName==='SCRIPT') return; if(n.nodeType===1 && n.id==='__fitcss') return; fit.appendChild(n); });
+    b.appendChild(fit);
+    return fit;
+  }
+  var fit=build();
+  function doFit(){
+    if(!fit)return;
+    fit.style.transform='none';
+    var DH=fit.scrollHeight||1;
+    var vw=document.documentElement.clientWidth||window.innerWidth;
+    var vh=document.documentElement.clientHeight||window.innerHeight;
+    var s=Math.min(vw/DW, vh/DH);
+    if(!isFinite(s)||s<=0)s=1;
+    var w=DW*s, h=DH*s, ox=(vw-w)/2, oy=(vh-h)/2;
+    fit.style.transform='translate('+ox+'px,'+oy+'px) scale('+s+')';
+    document.documentElement.style.setProperty('--fit-scale', s);
+  }
+  window.addEventListener('resize',doFit);
+  window.addEventListener('load',doFit);
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(doFit);}
+  doFit();setTimeout(doFit,150);setTimeout(doFit,500);setTimeout(doFit,1200);
+})();
+</script>
+
+</body>
+</html>

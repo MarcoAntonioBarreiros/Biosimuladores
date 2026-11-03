@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A ligação fosfodiéster e a assimetria da fita</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-dark: #1a1410;
+  --bg-darker: #0e0b08;
+  --kraft: #c9a876;
+  --kraft-light: #d9bd92;
+  --kraft-dark: #a8865a;
+  --kraft-edge: #8a6d44;
+  --ink: #2a1f14;
+  --ink-soft: #4a3826;
+  --cream: #f5ecd8;
+  --amber: #d9a14a;
+  --amber-btn: #e0b878;
+  --amber-deep: #b8893f;
+  --phosphate: #d97706;
+  --phosphate-glow: #fb923c;
+  --hydroxyl: #b91c1c;
+  --hydroxyl-glow: #ef4444;
+  --sugar: #3b6b8a;
+  --base-col: #6b4f8a;
+  --highlight: #f0c674;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg-darker);
+  font-family: 'Crimson Text', Georgia, serif;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  overflow-x: hidden;
+  user-select: none; -webkit-user-select: none;
+}
+.parchment {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(217,189,146,0.5) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 80%, rgba(168,134,90,0.4) 0%, transparent 55%),
+    linear-gradient(135deg, #cdac7c 0%, #c09a68 45%, #b89058 100%);
+  border-radius: 6px;
+  padding: 38px 46px 44px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.7), inset 0 0 120px rgba(120,90,50,0.35);
+  /* torn edge effect via clip */
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,0.2));
+}
+.parchment::before {
+  content: '';
+  position: absolute; inset: 14px;
+  border: 1.5px solid rgba(90,68,40,0.45);
+  border-radius: 3px;
+  pointer-events: none;
+}
+/* paper grain */
+.parchment::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(120,90,50,0.025) 0px, transparent 2px, transparent 4px),
+    repeating-linear-gradient(90deg, rgba(120,90,50,0.02) 0px, transparent 3px, transparent 6px);
+  border-radius: 6px;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+.content { position: relative; z-index: 2; }
+
+h1 {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  text-align: center;
+  color: var(--ink);
+  font-size: clamp(22px, 3.4vw, 38px);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 0 rgba(245,236,216,0.4);
+  margin-bottom: 6px;
+}
+.subtitle {
+  text-align: center;
+  font-style: italic;
+  font-size: clamp(14px, 1.7vw, 18px);
+  color: var(--ink-soft);
+  margin-bottom: 18px;
+  max-width: 760px;
+  margin-left: auto; margin-right: auto;
+  line-height: 1.4;
+}
+
+.stage {
+  position: relative;
+  background: linear-gradient(180deg, rgba(40,28,16,0.06), rgba(40,28,16,0.12));
+  border: 1.5px solid rgba(90,68,40,0.35);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 16px;
+}
+#dna-svg { width: 100%; height: auto; display: block; }
+
+.controls {
+  display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.btn {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 11px 22px;
+  border-radius: 24px;
+  border: 2px solid var(--amber-deep);
+  background: linear-gradient(180deg, var(--amber-btn), var(--amber-deep));
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 3px 0 rgba(120,90,50,0.5), 0 6px 12px rgba(0,0,0,0.3);
+  display: flex; align-items: center; gap: 9px;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 5px 0 rgba(120,90,50,0.5), 0 9px 18px rgba(0,0,0,0.35); }
+.btn:active { transform: translateY(1px); box-shadow: 0 2px 0 rgba(120,90,50,0.5); }
+.btn.active-5 { background: linear-gradient(180deg, var(--phosphate-glow), var(--phosphate)); border-color: #9a5610; color: #fff; }
+.btn.active-3 { background: linear-gradient(180deg, var(--hydroxyl-glow), var(--hydroxyl)); border-color: #7f1010; color: #fff; }
+.btn .dot { width: 11px; height: 11px; border-radius: 50%; }
+.btn .dot.p { background: var(--phosphate); box-shadow: 0 0 0 2px rgba(255,255,255,0.5); }
+.btn .dot.h { background: var(--hydroxyl); box-shadow: 0 0 0 2px rgba(255,255,255,0.5); }
+
+.readout {
+  min-height: 76px;
+  background: linear-gradient(180deg, rgba(20,14,8,0.85), rgba(30,22,12,0.9));
+  border: 1.5px solid var(--kraft-edge);
+  border-radius: 8px;
+  padding: 14px 20px;
+  color: var(--cream);
+  font-size: clamp(14px, 1.7vw, 17px);
+  line-height: 1.5;
+  text-align: center;
+  transition: all 0.3s ease;
+  display: flex; align-items: center; justify-content: center;
+}
+.readout strong { color: var(--highlight); font-weight: 600; }
+.readout .tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.85em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin: 0 2px;
+}
+.readout .tag.p { background: var(--phosphate); color: #fff; }
+.readout .tag.h { background: var(--hydroxyl); color: #fff; }
+
+.explainer {
+  font-size: clamp(14px, 1.6vw, 16.5px);
+  color: var(--ink);
+  line-height: 1.55;
+  max-width: 920px;
+  margin: 0 auto;
+}
+.explainer p { margin-bottom: 8px; }
+.explainer .lead { font-weight: 600; }
+.explainer .closer {
+  font-style: italic;
+  text-align: center;
+  font-size: 1.08em;
+  color: var(--ink-soft);
+  border-top: 1px solid rgba(90,68,40,0.3);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.explainer em.p5 { color: #9a5610; font-weight: 700; font-style: normal; }
+.explainer em.h3 { color: #8f1414; font-weight: 700; font-style: normal; }
+
+@media (max-width: 640px) {
+  .parchment { padding: 26px 20px 30px; }
+}
+</style>
+</head>
+<body>
+<div class="parchment">
+<div class="content">
+  <h1>Por que a fita tem duas pontas diferentes</h1>
+  <p class="subtitle">A ligação fosfodiéster e a assimetria que dá direção ao DNA</p>
+
+  <div class="stage">
+    <svg id="dna-svg" viewBox="0 0 920 300" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="btn5"><span class="dot p"></span> Destacar extremidade 5′</button>
+    <button class="btn" id="btn3"><span class="dot h"></span> Destacar extremidade 3′</button>
+  </div>
+
+  <div class="readout" id="readout">
+    Uma fita de DNA é uma sequência de nucleotídeos unidos pela <strong>ligação fosfodiéster</strong>. Destaque cada extremidade para ver por que elas não são iguais.
+  </div>
+
+  <div class="explainer">
+    <p class="lead">Os nucleotídeos se unem por uma <em class="p5">ligação fosfodiéster</em>: o fosfato no carbono 5′ de um conecta-se ao oxigênio do carbono 3′ do vizinho.</p>
+    <p>Como cada ligação consome a hidroxila 3′ de um nucleotídeo e o fosfato 5′ do outro, a fita pronta tem necessariamente uma ponta com <em class="p5">fosfato livre (5′)</em> e outra com <em class="h3">hidroxila livre (3′)</em>.</p>
+    <p class="closer">A fita não pode ser simétrica — e essa assimetria é a origem física da direção 5′→3′.</p>
+  </div>
+</div>
+</div>
+
+<script>
+const svg = document.getElementById('dna-svg');
+const readout = document.getElementById('readout');
+const btn5 = document.getElementById('btn5');
+const btn3 = document.getElementById('btn3');
+
+// Three nucleotides chained 5'->3' left to right.
+// Each nucleotide: phosphate (circle) - sugar (pentagon) - base (block).
+// Phosphodiester bond links phosphate(5') of one to C3' of the next.
+const N = 3;
+const startX = 150;
+const spacing = 250;
+const sugarY = 165;
+let highlight = null; // '5' | '3' | null
+
+function nucX(i){ return startX + i * spacing; }
+
+function drawSugar(cx, cy, label3prime, label5prime) {
+  // pentagon (deoxyribose) with numbered carbons
+  const r = 34;
+  let pts = [];
+  for (let k = 0; k < 5; k++) {
+    const ang = -Math.PI/2 + k * (2*Math.PI/5);
+    pts.push([cx + r*Math.cos(ang), cy + r*Math.sin(ang)]);
+  }
+  // pts[0]=top(1'), going clockwise. We'll map: top-right area = 1', etc.
+  let s = `<polygon points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}"
+            fill="#4a7a99" stroke="#2c4f63" stroke-width="2.5"/>`;
+  s += `<text x="${cx}" y="${cy+5}" text-anchor="middle" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="#dce9f0">açúcar</text>`;
+  return { svg: s, pts };
+}
+
+function render() {
+  let s = '';
+
+  // backbone connecting line (faint)
+  s += `<line x1="${nucX(0)-70}" y1="${sugarY}" x2="${nucX(N-1)+70}" y2="${sugarY}" stroke="rgba(90,68,40,0.25)" stroke-width="2" stroke-dasharray="3,4"/>`;
+
+  for (let i = 0; i < N; i++) {
+    const cx = nucX(i);
+
+    // --- Base (hangs below sugar, attached at 1') ---
+    const baseY = sugarY + 78;
+    s += `<line x1="${cx+18}" y1="${sugarY+22}" x2="${cx+18}" y2="${baseY-16}" stroke="#6b4f8a" stroke-width="3"/>`;
+    s += `<rect x="${cx-4}" y="${baseY-16}" width="44" height="30" rx="5" fill="#6b4f8a" stroke="#4a3568" stroke-width="2"/>`;
+    s += `<text x="${cx+18}" y="${baseY+4}" text-anchor="middle" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="#e6dcf0">base</text>`;
+
+    // --- Sugar (pentagon) ---
+    const sug = drawSugar(cx, sugarY);
+    s += sug.svg;
+
+    // carbon labels 3' (right-bottom) and 5' (left-top)
+    s += `<text x="${cx+40}" y="${sugarY+30}" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="#7f1414">3′</text>`;
+    s += `<text x="${cx-46}" y="${sugarY-18}" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="#9a5610">5′</text>`;
+
+    // --- Phosphate (circle, upper-left of sugar, attached to 5') ---
+    const phX = cx - 70, phY = sugarY - 38;
+    s += `<line x1="${cx-26}" y1="${sugarY-20}" x2="${phX+14}" y2="${phY+10}" stroke="#9a5610" stroke-width="3"/>`;
+    const phHi = highlight === '5' && i === 0;
+    s += `<circle cx="${phX}" cy="${phY}" r="20" fill="${phHi?'var(--phosphate-glow)':'#d97706'}" stroke="#9a5610" stroke-width="2.5" ${phHi?'filter="url(#glowP)"':''}/>`;
+    s += `<text x="${phX}" y="${phY+5}" text-anchor="middle" font-family="JetBrains Mono" font-size="15" font-weight="700" fill="#fff">P</text>`;
+
+    // --- Phosphodiester bond: phosphate of nucleotide i links to C3' of nucleotide i-1 ---
+    if (i > 0) {
+      const prevCx = nucX(i-1);
+      const prev3x = prevCx + 38, prev3y = sugarY + 24;
+      // bond from previous sugar's 3' to this phosphate
+      s += `<path d="M ${prev3x} ${prev3y} Q ${(prev3x+phX)/2} ${sugarY+50}, ${phX} ${phY+18}"
+             stroke="#7a5a2c" stroke-width="3.5" fill="none"/>`;
+      // label "ligação fosfodiéster" on the middle bond
+      if (i === 1) {
+        const midX = (prev3x + phX)/2;
+        s += `<text x="${midX}" y="${sugarY+72}" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" font-weight="700" fill="#5a4428">ligação fosfodiéster</text>`;
+        s += `<text x="${midX}" y="${sugarY+86}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#7a5a3a">3′ — O — P — 5′</text>`;
+      }
+    }
+  }
+
+  // --- FREE 5' end (leftmost phosphate) ---
+  const free5x = nucX(0) - 70, free5y = sugarY - 38;
+  const hi5 = highlight === '5';
+  if (hi5) {
+    s += `<circle cx="${free5x}" cy="${free5y}" r="32" fill="none" stroke="var(--phosphate-glow)" stroke-width="3" stroke-dasharray="5,4" opacity="0.9"><animate attributeName="r" values="30;36;30" dur="1.6s" repeatCount="indefinite"/></circle>`;
+  }
+  s += `<text x="${free5x}" y="${free5y-44}" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="700" fill="${hi5?'#9a5610':'#7a5a3a'}">extremidade 5′</text>`;
+  s += `<text x="${free5x}" y="${free5y-30}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="${hi5?'#9a5610':'#8a6d4a'}">fosfato livre</text>`;
+  s += `<line x1="${free5x}" y1="${free5y-26}" x2="${free5x}" y2="${free5y-20}" stroke="${hi5?'#9a5610':'#8a6d4a'}" stroke-width="1.5"/>`;
+
+  // --- FREE 3' end (rightmost sugar's 3' carbon -> OH) ---
+  const lastCx = nucX(N-1);
+  const free3x = lastCx + 56, free3y = sugarY + 36;
+  const hi3 = highlight === '3';
+  s += `<line x1="${lastCx+38}" y1="${sugarY+24}" x2="${free3x-6}" y2="${free3y}" stroke="${hi3?'var(--hydroxyl)':'#8f1414'}" stroke-width="3"/>`;
+  if (hi3) {
+    s += `<circle cx="${free3x+10}" cy="${free3y}" r="26" fill="none" stroke="var(--hydroxyl-glow)" stroke-width="3" stroke-dasharray="5,4" opacity="0.9"><animate attributeName="r" values="24;30;24" dur="1.6s" repeatCount="indefinite"/></circle>`;
+  }
+  s += `<circle cx="${free3x+10}" cy="${free3y}" r="17" fill="${hi3?'var(--hydroxyl-glow)':'#b91c1c'}" stroke="#7f1010" stroke-width="2.5"/>`;
+  s += `<text x="${free3x+10}" y="${free3y+4}" text-anchor="middle" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="#fff">OH</text>`;
+  s += `<text x="${free3x+10}" y="${free3y+44}" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="700" fill="${hi3?'#8f1414':'#7a5a3a'}">extremidade 3′</text>`;
+  s += `<text x="${free3x+10}" y="${free3y+58}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="${hi3?'#8f1414':'#8a6d4a'}">hidroxila livre</text>`;
+
+  // defs for glow
+  s = `<defs>
+    <filter id="glowP" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>` + s;
+
+  // direction arrow
+  s += `<text x="460" y="32" text-anchor="middle" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="#5a4428">sentido de crescimento da fita: 5′ → 3′</text>`;
+  s += `<line x1="360" y1="42" x2="560" y2="42" stroke="#5a4428" stroke-width="2"/>`;
+  s += `<polygon points="560,42 552,38 552,46" fill="#5a4428"/>`;
+
+  svg.innerHTML = s;
+}
+
+function setHighlight(which) {
+  highlight = (highlight === which) ? null : which;
+  btn5.classList.toggle('active-5', highlight === '5');
+  btn3.classList.toggle('active-3', highlight === '3');
+  render();
+  if (highlight === '5') {
+    readout.innerHTML = 'A <span class="tag p">extremidade 5′</span> termina num <strong>fosfato livre</strong>, ligado ao carbono 5′ do açúcar. Aqui <strong>não há hidroxila disponível</strong> — por isso a fita não pode crescer por esta ponta.';
+  } else if (highlight === '3') {
+    readout.innerHTML = 'A <span class="tag h">extremidade 3′</span> termina numa <strong>hidroxila livre (–OH)</strong> no carbono 3′. É <strong>esta hidroxila</strong> que ataca o próximo nucleotídeo — a fita só cresce por aqui.';
+  } else {
+    readout.innerHTML = 'Uma fita de DNA é uma sequência de nucleotídeos unidos pela <strong>ligação fosfodiéster</strong>. Destaque cada extremidade para ver por que elas não são iguais.';
+  }
+}
+
+btn5.addEventListener('click', () => setHighlight('5'));
+btn3.addEventListener('click', () => setHighlight('3'));
+
+render();
+</script>
+
+<style id="__fitcss">
+  html,body{height:100%!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important;}
+  #__fit{position:fixed;left:0;top:0;width:1100px;transform-origin:0 0;}
+  .ghost{transform:scale(var(--fit-scale,1))!important;transform-origin:top left!important;}
+</style>
+<script>
+(function(){
+  var DW=1100;
+  function build(){
+    var b=document.body;
+    if(document.getElementById('__fit'))return document.getElementById('__fit');
+    var fit=document.createElement('div');fit.id='__fit';
+    var kids=[];for(var i=0;i<b.childNodes.length;i++)kids.push(b.childNodes[i]);
+    kids.forEach(function(n){ if(n.nodeType===1 && n.tagName==='SCRIPT') return; if(n.nodeType===1 && n.id==='__fitcss') return; fit.appendChild(n); });
+    b.appendChild(fit);
+    return fit;
+  }
+  var fit=build();
+  function doFit(){
+    if(!fit)return;
+    fit.style.transform='none';
+    var DH=fit.scrollHeight||1;
+    var vw=document.documentElement.clientWidth||window.innerWidth;
+    var vh=document.documentElement.clientHeight||window.innerHeight;
+    var s=Math.min(vw/DW, vh/DH);
+    if(!isFinite(s)||s<=0)s=1;
+    var w=DW*s, h=DH*s, ox=(vw-w)/2, oy=(vh-h)/2;
+    fit.style.transform='translate('+ox+'px,'+oy+'px) scale('+s+')';
+    document.documentElement.style.setProperty('--fit-scale', s);
+  }
+  window.addEventListener('resize',doFit);
+  window.addEventListener('load',doFit);
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(doFit);}
+  doFit();setTimeout(doFit,150);setTimeout(doFit,500);setTimeout(doFit,1200);
+})();
+</script>
+
+</body>
+</html>

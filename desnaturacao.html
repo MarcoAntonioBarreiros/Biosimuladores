@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desnaturação e Anelamento — a corrida do primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f5f0e6; --paper-deep: #ebe3d3;
+  --ink: #1c1612; --ink-soft: #4a3f33; --ink-faint: #8a7f6f;
+  --rule: #d6cab2;
+  --teal: #0e6759; --teal-deep: #08423a;
+  --oxblood: #8b2c20;
+  --cold: #1d4ed8; --cool: #0891b2; --warm: #d97706; --hot: #dc2626;
+  --dna-a: #5b4636; --dna-b: #8a6f56;
+  --at: #1e5fa8; --gc: #b91c1c;
+  --base-a: #1e5fa8; --base-t: #0e9aa0; --base-g: #b91c1c; --base-c: #c2700a;
+  --primer: #166534; --primer-deep: #14532d; --primer-soft: #bbf7d0;
+  --primer-bb: #15803d;
+  --shadow-md: 0 4px 12px rgba(28,22,18,0.08);
+  --shadow-lg: 0 12px 32px rgba(28,22,18,0.18);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--paper); color: var(--ink);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 15px; line-height: 1.5; min-height: 100vh; overflow-x: hidden;
+  background-image: radial-gradient(circle at 20% 10%, rgba(180,160,120,0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(14,103,89,0.05) 0%, transparent 50%);
+  user-select: none; -webkit-user-select: none;
+}
+.frame { max-width: 1360px; margin: 0 auto; padding: 22px; }
+.head { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 24px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); margin-bottom: 16px; }
+.head h1 { font-family: 'Fraunces', serif; font-weight: 800; font-size: clamp(24px, 2.6vw, 34px); letter-spacing: -0.02em; line-height: 1.05; }
+.head h1 em { font-style: italic; color: var(--oxblood); }
+.sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-faint); margin-top: 6px; }
+.stats { display: flex; gap: 8px; }
+.stat { background: var(--paper-deep); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 10px; text-align: center; min-width: 88px; }
+.stat .num { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; line-height: 1.1; color: var(--teal-deep); }
+.stat .label { font-family: 'JetBrains Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); margin-top: 3px; }
+.lab { display: grid; grid-template-columns: 1fr 300px; gap: 18px; }
+.lab-area { background: linear-gradient(180deg, #faf6ed 0%, #f0e8d4 100%); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; position: relative; overflow: hidden; min-height: 520px; }
+.lab-area::before { content: ''; position: absolute; inset: 8px; border: 1px dashed rgba(74,63,51,0.13); border-radius: 6px; pointer-events: none; z-index: 1; }
+.temp-tint { position: absolute; inset: 0; pointer-events: none; z-index: 1; transition: background 0.5s ease; }
+#main-svg { width: 100%; height: auto; position: relative; z-index: 2; display: block; }
+.palette { background: rgba(255,253,247,0.6); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; align-self: start; position: sticky; top: 18px; }
+.col-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--teal-deep); font-weight: 600; padding-bottom: 10px; margin-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.col-title:not(:first-child) { margin-top: 18px; }
+.temp-display { text-align: center; margin-bottom: 12px; }
+.temp-value { font-family: 'Fraunces', serif; font-size: 42px; font-weight: 800; line-height: 1; transition: color 0.4s ease; }
+.temp-state { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; margin-top: 4px; }
+.temp-slider-wrap { position: relative; padding: 8px 0; }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 10px; border-radius: 5px; background: linear-gradient(90deg, #1d4ed8 0%, #0891b2 30%, #d97706 70%, #dc2626 100%); outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--paper); border: 3px solid var(--ink); cursor: grab; box-shadow: var(--shadow-md); }
+input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--paper); border: 3px solid var(--ink); cursor: grab; box-shadow: var(--shadow-md); }
+.temp-ticks { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ink-faint); margin-top: 4px; }
+.temp-markers { position: relative; height: 26px; margin-top: 2px; font-family: 'JetBrains Mono', monospace; font-size: 8px; }
+.temp-marker { position: absolute; transform: translateX(-50%); color: var(--ink-faint); white-space: nowrap; text-align: center; }
+.temp-marker .line { width: 1px; height: 6px; background: var(--ink-faint); margin: 0 auto 2px; }
+.toggle-row { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--paper); border: 1.5px solid var(--rule); border-radius: 8px; cursor: pointer; transition: all 0.15s ease; }
+.toggle-row:hover { border-color: var(--primer); }
+.toggle-row.on { border-color: var(--primer); background: var(--primer-soft); }
+.toggle-switch { width: 44px; height: 24px; border-radius: 12px; background: var(--ink-faint); position: relative; transition: background 0.2s ease; flex-shrink: 0; }
+.toggle-row.on .toggle-switch { background: var(--primer); }
+.toggle-knob { width: 18px; height: 18px; border-radius: 50%; background: white; position: absolute; top: 3px; left: 3px; transition: left 0.2s ease; }
+.toggle-row.on .toggle-knob { left: 23px; }
+.toggle-label { flex: 1; }
+.toggle-label .t { font-weight: 700; font-size: 13px; }
+.toggle-label .d { font-size: 11px; color: var(--ink-soft); margin-top: 1px; }
+.info-card { font-size: 12px; line-height: 1.5; color: var(--ink-soft); padding: 11px 13px; border-radius: 8px; border-left: 3px solid var(--teal); background: rgba(14,103,89,0.06); margin-top: 14px; }
+.info-card strong { color: var(--teal-deep); }
+.legend { margin-top: 14px; font-size: 11px; }
+.legend-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.legend-swatch { width: 18px; height: 0; border-top-width: 3px; border-top-style: solid; flex-shrink: 0; }
+.legend-swatch.dashed { border-top-style: dashed; }
+.toast { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--paper); padding: 13px 20px; border-radius: 8px; font-size: 12.5px; box-shadow: var(--shadow-lg); opacity: 0; pointer-events: none; transition: all 0.3s ease; z-index: 100; max-width: 520px; text-align: center; line-height: 1.4; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast strong { color: #fbbf24; }
+.toast.win { background: var(--teal-deep); }
+.toast.win strong { color: #86efac; }
+.toast.warn { background: var(--warm); }
+.toast.warn strong { color: #fff; text-decoration: underline; }
+.mechanism { margin-top: 16px; padding: 16px 22px; background: var(--ink); color: var(--paper); border-radius: 10px; font-size: 13px; line-height: 1.55; }
+.mechanism h3 { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; color: #fbbf24; margin-bottom: 6px; font-style: italic; }
+.mechanism em { font-style: normal; font-weight: 600; }
+.mechanism em.gc { color: #fca5a5; }
+.mechanism em.at { color: #67e8f9; }
+.mechanism em.pr { color: #86efac; }
+.mechanism em.hl { color: #fbbf24; }
+@media (max-width: 980px) {
+  .lab { grid-template-columns: 1fr; }
+  .palette { position: static; }
+  .head { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="frame">
+<header class="head">
+  <div>
+    <h1>Desnaturação e anelamento: <em>a corrida do primer</em></h1>
+    <div class="sub">Temperatura · pontes de hidrogênio · especificidade do anelamento</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="num" id="stat-temp">25°C</div><div class="label">temperatura</div></div>
+    <div class="stat"><div class="num" id="stat-state">dupla fita</div><div class="label">estado</div></div>
+    <div class="stat"><div class="num" id="stat-hbonds">48</div><div class="label">pontes de H</div></div>
+  </div>
+</header>
+<div class="lab">
+  <section class="lab-area" id="lab-area">
+    <div class="temp-tint" id="temp-tint"></div>
+    <svg id="main-svg" viewBox="0 0 760 520" preserveAspectRatio="xMidYMid meet"></svg>
+  </section>
+  <aside class="palette">
+    <div class="col-title">Controle de temperatura</div>
+    <div class="temp-display">
+      <div class="temp-value" id="temp-big">25°C</div>
+      <div class="temp-state" id="temp-label">DUPLA FITA ESTÁVEL</div>
+    </div>
+    <div class="temp-slider-wrap">
+      <input type="range" id="temp-slider" min="25" max="98" value="25" step="1">
+      <div class="temp-ticks"><span>25°C</span><span>60°C</span><span>98°C</span></div>
+      <div class="temp-markers">
+        <div class="temp-marker" style="left: 14%;"><div class="line"></div>frio<br>demais</div>
+        <div class="temp-marker" style="left: 41%;"><div class="line"></div>anelam.<br>ideal</div>
+        <div class="temp-marker" style="left: 78%;"><div class="line"></div>Tm<br>GC</div>
+      </div>
+    </div>
+    <div class="col-title">Primers na solução</div>
+    <div class="toggle-row" id="primer-toggle">
+      <div class="toggle-switch"><div class="toggle-knob"></div></div>
+      <div class="toggle-label">
+        <div class="t">Adicionar primers</div>
+        <div class="d">curtos · em excesso na solução</div>
+      </div>
+    </div>
+    <div class="info-card" id="info-card">
+      Aqueça acima da Tm para separar as fitas. Depois resfrie e observe o reanelamento. Ative os primers e compare em diferentes temperaturas de resfriamento.
+    </div>
+    <div class="col-title">Legenda</div>
+    <div class="legend">
+      <div class="legend-item" style="gap:6px;">
+        <span style="display:inline-flex; gap:3px;">
+          <span style="width:15px;height:15px;border-radius:50%;background:var(--base-a);color:white;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-family:Fraunces;">A</span>
+          <span style="width:15px;height:15px;border-radius:50%;background:var(--base-t);color:white;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-family:Fraunces;">T</span>
+          <span style="width:15px;height:15px;border-radius:50%;background:var(--base-g);color:white;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-family:Fraunces;">G</span>
+          <span style="width:15px;height:15px;border-radius:50%;background:var(--base-c);color:white;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-family:Fraunces;">C</span>
+        </span>
+        <span>as 4 bases</span>
+      </div>
+      <div class="legend-item"><span class="legend-swatch dashed" style="border-color: var(--at);"></span> ponte A·T — 2 tracinhos</div>
+      <div class="legend-item"><span class="legend-swatch dashed" style="border-color: var(--gc);"></span> ponte G·C — 3 tracinhos</div>
+      <div class="legend-item"><span class="legend-swatch" style="border-color: var(--primer-bb); border-top-width:4px;"></span> primer (curto, complementar)</div>
+    </div>
+  </aside>
+</div>
+<div class="mechanism">
+  <h3>Por que a temperatura de anelamento define a especificidade</h3>
+  <p>As fitas se mantêm unidas por <em>pontes de hidrogênio</em>: <em class="at">A·T = 2 pontes</em>, <em class="gc">G·C = 3 pontes</em>. Aquecer rompe essas pontes — trechos ricos em G·C resistem mais (abrem por último, reanelam primeiro). Ao resfriar há uma <em class="hl">corrida cinética</em>: as duas fitas-molde longas demoram a se reencontrar (são grandes e pouco numerosas), enquanto o <em class="pr">primer</em>, curto e em excesso, anela muito mais rápido — e por isso vence.</p>
+  <p style="margin-top:6px;">Mas <em class="hl">onde</em> o primer anela depende da temperatura. O primer foi desenhado para a <em class="hl">transição A·T→G·C</em>: na temperatura ideal, ele só fica ancorado se <em>tanto</em> os G·C <em>quanto</em> os A·T pareiam — é a exigência de pareamento completo que dá a especificidade. Se a temperatura cai demais, os <em class="gc">G·C (3 pontes) seguram sozinhos</em> e o primer adere a <em>qualquer região rica em G·C</em>, mesmo a errada. Ali os A·T do primer não encontram par e <em>ficam soltos</em>, formando uma alça — exatamente como os A·T do molde se soltam quando não há força para a ponte. A regra é a mesma para as duas fitas: <em class="hl">sem pareamento, solta</em>. É o anelamento inespecífico, causa de produtos errados na PCR quando a temperatura de anelamento é baixa demais.</p>
+  <p style="margin-top:6px;">Repare que, fora do sítio do primer, as duas fitas-molde <em>voltam a parear entre si</em> ao resfriar — é o que a física da solução faz nessa etapa. Quem desfaz isso é a <em class="hl">DNA polimerase na etapa de extensão</em> (~72°C): partindo da 3'-OH do primer, ela avança ao longo do molde e <em>desloca a fita complementar</em> à medida que sintetiza a nova. Esta simulação cobre apenas a desnaturação e o anelamento; a abertura do molde pela polimerase acontece na etapa seguinte.</p>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const TOP_SEQ = ['A','T','A','T','A','T','A','T','G','C','G','A','T','A','C','G','C','G','C','G'];
+const BOT_SEQ = ['T','A','T','A','T','A','T','A','C','G','C','T','A','T','G','C','G','C','G','C'];
+function bondsFor(b){ return (b==='G'||b==='C') ? 3 : 2; }
+const N = TOP_SEQ.length;
+function comp(b){ return {A:'T',T:'A',G:'C',C:'G'}[b]; }
+const PRIMER_TARGET_START = 5;
+const PRIMER_LEN = 6;
+const PRIMER_SEQ = [];
+for (let k = 0; k < PRIMER_LEN; k++) PRIMER_SEQ.push(TOP_SEQ[PRIMER_TARGET_START + k]);
+const MISPRIME_START = 14;
+let state = {
+  temp: 25, primersOn: false,
+  openness: new Array(N).fill(0),
+  primerSite: null, primerBind: 0, lastTemp: 25
+};
+const TM_AT = 65, TM_GC = 82, MELT_WIDTH = 7;
+const T_ANNEAL_IDEAL_HI = 60, T_ANNEAL_TOO_COLD = 45;
+let animLoop = null;
+const DNA_LEFT = 70, DNA_RIGHT = 690;
+const BP = (DNA_RIGHT - DNA_LEFT) / (N - 1);
+const CY = 250;
+function bpX(i){ return DNA_LEFT + i * BP; }
+function targetOpenness(i) {
+  const tm = bondsFor(TOP_SEQ[i]) === 3 ? TM_GC : TM_AT;
+  const x = (state.temp - tm) / MELT_WIDTH;
+  return 1 / (1 + Math.exp(-x));
+}
+let prevAvg = 0;
+function stepPhysics(dt) {
+  const rate = dt * 0.004;
+  state.lastTemp += (state.temp - state.lastTemp) * 0.3;
+  if (state.primersOn) {
+    if (state.temp < T_ANNEAL_TOO_COLD) {
+      if (state.primerSite !== 'misprime') { state.primerSite = 'misprime'; state.primerBind = 0; }
+      state.primerBind += rate * 4;
+    } else if (state.temp < T_ANNEAL_IDEAL_HI) {
+      // Specific annealing range. The primer is short and in excess, so it can
+      // invade and anneal at its target whenever the temperature is right —
+      // it does not require the site to be pre-opened (the primer opens it).
+      if (state.primerSite !== 'target') { state.primerSite = 'target'; state.primerBind = 0; }
+      state.primerBind += rate * 5;
+    } else {
+      state.primerBind -= rate * 6;
+      if (state.primerBind <= 0) { state.primerBind = 0; state.primerSite = null; }
+    }
+    state.primerBind = Math.max(0, Math.min(1, state.primerBind));
+  } else {
+    state.primerBind -= rate * 6;
+    if (state.primerBind <= 0) { state.primerBind = 0; state.primerSite = null; }
+  }
+  for (let i = 0; i < N; i++) {
+    let target = targetOpenness(i);
+    let speed = (target > state.openness[i]) ? rate * 3 : rate * 0.4;
+    const boundHere =
+      state.primerBind > 0.5 && state.primerSite &&
+      ((state.primerSite === 'target' && i >= PRIMER_TARGET_START && i < PRIMER_TARGET_START + PRIMER_LEN) ||
+       (state.primerSite === 'misprime' && i >= MISPRIME_START && i < MISPRIME_START + PRIMER_LEN));
+    if (boundHere) { target = Math.max(target, 0.85); speed = rate * 3; }
+    state.openness[i] += (target - state.openness[i]) * speed;
+    state.openness[i] = Math.max(0, Math.min(1, state.openness[i]));
+  }
+  prevAvg = avgOpen();
+}
+function avgOpen(){ return state.openness.reduce((a,b)=>a+b,0)/N; }
+function countHBonds(){
+  let n = 0;
+  for (let i=0;i<N;i++) n += bondsFor(TOP_SEQ[i]) * (1 - state.openness[i]);
+  return Math.round(n);
+}
+function baseColor(b) {
+  return { A:'var(--base-a)', T:'var(--base-t)', G:'var(--base-g)', C:'var(--base-c)' }[b];
+}
+function baseCircle(x, y, base, faded) {
+  const col = baseColor(base);
+  return '<circle cx="'+x+'" cy="'+y+'" r="9" fill="'+col+'" opacity="'+(faded?0.3:0.95)+'"/>'+
+         '<text x="'+x+'" y="'+(y+3.5)+'" text-anchor="middle" font-family="Fraunces" font-size="11" font-weight="700" fill="white" opacity="'+(faded?0.5:1)+'">'+base+'</text>';
+}
+function hbondTicks(x, yTop, yBot, base, alpha) {
+  const nb = bondsFor(base);
+  const col = nb === 3 ? 'var(--gc)' : 'var(--at)';
+  const spread = nb === 3 ? 3.5 : 2.5;
+  let s = '';
+  for (let k = 0; k < nb; k++) {
+    const dx = (k - (nb-1)/2) * spread;
+    s += '<line x1="'+(x+dx)+'" y1="'+yTop+'" x2="'+(x+dx)+'" y2="'+yBot+'" stroke="'+col+'" stroke-width="1.3" stroke-dasharray="2,2" opacity="'+alpha+'"/>';
+  }
+  return s;
+}
+function svgScene() {
+  const maxBow = 90;
+  const topY = [], botY = [];
+  for (let i = 0; i < N; i++) {
+    const o = state.openness[i];
+    topY[i] = CY - 13 - o * maxBow;
+    botY[i] = CY + 13 + o * maxBow;
+  }
+  let s = '';
+  let topPath = 'M '+bpX(0)+' '+topY[0];
+  let botPath = 'M '+bpX(0)+' '+botY[0];
+  for (let i = 1; i < N; i++) {
+    const xm = (bpX(i-1)+bpX(i))/2;
+    topPath += ' Q '+xm+' '+topY[i-1]+', '+bpX(i)+' '+topY[i];
+    botPath += ' Q '+xm+' '+botY[i-1]+', '+bpX(i)+' '+botY[i];
+  }
+  s += '<path d="'+topPath+'" stroke="var(--dna-a)" stroke-width="4" fill="none" stroke-linecap="round"/>';
+  s += '<path d="'+botPath+'" stroke="var(--dna-b)" stroke-width="4" fill="none" stroke-linecap="round"/>';
+  for (let i = 0; i < N; i++) {
+    const o = state.openness[i];
+    if (o > 0.82) continue;
+    s += hbondTicks(bpX(i), topY[i] + 9, botY[i] - 9, TOP_SEQ[i], 1 - o);
+  }
+  if (state.primerSite && state.primerBind > 0.03) {
+    s += drawPrimer(state.primerSite, state.primerBind, botY);
+  }
+  for (let i = 0; i < N; i++) {
+    s += baseCircle(bpX(i), topY[i] + 9, TOP_SEQ[i], false);
+    s += baseCircle(bpX(i), botY[i] - 9, BOT_SEQ[i], false);
+  }
+  s += '<text x="'+(bpX(0)-18)+'" y="'+(topY[0]+13)+'" text-anchor="end" font-family="JetBrains Mono" font-size="10" font-weight="700" fill="var(--dna-a)">5\u2032</text>';
+  s += '<text x="'+(bpX(N-1)+18)+'" y="'+(topY[N-1]+13)+'" font-family="JetBrains Mono" font-size="10" font-weight="700" fill="var(--dna-a)">3\u2032</text>';
+  s += '<text x="'+(bpX(0)-18)+'" y="'+(botY[0]-5)+'" text-anchor="end" font-family="JetBrains Mono" font-size="10" font-weight="700" fill="var(--dna-b)">3\u2032</text>';
+  s += '<text x="'+(bpX(N-1)+18)+'" y="'+(botY[N-1]-5)+'" font-family="JetBrains Mono" font-size="10" font-weight="700" fill="var(--dna-b)">5\u2032</text>';
+  const annY = CY + maxBow + 60;
+  s += '<text x="'+bpX(3)+'" y="'+(annY+20)+'" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="var(--at)" font-weight="700" opacity="0.75">rica em A\u00b7T (abre antes)</text>';
+  s += '<text x="'+bpX(16.5)+'" y="'+(annY+20)+'" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="var(--gc)" font-weight="700" opacity="0.75">regi\u00e3o rica em G\u00b7C (resiste mais)</text>';
+  const tx1 = bpX(PRIMER_TARGET_START), tx2 = bpX(PRIMER_TARGET_START + PRIMER_LEN - 1);
+  if (state.primersOn) {
+    s += '<line x1="'+(tx1-9)+'" y1="'+(annY+2)+'" x2="'+(tx2+9)+'" y2="'+(annY+2)+'" stroke="var(--primer)" stroke-width="2"/>';
+    s += '<text x="'+((tx1+tx2)/2)+'" y="'+(annY-4)+'" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="var(--primer-deep)" font-weight="700">alvo correto do primer (transi\u00e7\u00e3o A\u00b7T\u2192G\u00b7C)</text>';
+  }
+  return s;
+}
+function drawPrimer(site, bind, botY) {
+  const startIdx = (site === 'target') ? PRIMER_TARGET_START : MISPRIME_START;
+  const a = bind;
+  let s = '<g opacity="'+Math.min(1, a*1.5)+'">';
+  const px0 = bpX(startIdx), pxN = bpX(startIdx + PRIMER_LEN - 1);
+  // Docking line: where a PAIRED primer base sits (just above the template base)
+  const dockY = (botY[startIdx] + botY[startIdx + PRIMER_LEN - 1]) / 2 - 30;
+  const floatY = CY + 150;
+  const py = floatY + (dockY - floatY) * a;  // animated rise from float to dock
+  const loopLift = 30;  // how far an UNPAIRED base lifts away (forms a loop/bubble)
+
+  // Per-base positions: paired bases sit at py; mismatched bases lift up by loopLift.
+  const baseY = [];
+  const matchArr = [];
+  for (let k = 0; k < PRIMER_LEN; k++) {
+    const i = startIdx + k;
+    const matches = comp(PRIMER_SEQ[k]) === BOT_SEQ[i];
+    matchArr.push(matches);
+    // When docked (a high), mismatched bases lift; while still floating they ride along.
+    const lift = matches ? 0 : loopLift * a;
+    baseY.push(py - lift);
+  }
+
+  // Primer backbone follows the base positions — so mismatched stretches bulge up as a loop.
+  let bb = 'M '+px0+' '+baseY[0];
+  for (let k = 1; k < PRIMER_LEN; k++) {
+    const xPrev = bpX(startIdx + k - 1), xCur = bpX(startIdx + k);
+    const xm = (xPrev + xCur) / 2;
+    bb += ' Q '+xm+' '+baseY[k-1]+', '+xCur+' '+baseY[k];
+  }
+  s += '<path d="'+bb+'" stroke="var(--primer-bb)" stroke-width="4" fill="none" stroke-linecap="round"/>';
+
+  // Bases + H-bonds (only where paired)
+  for (let k = 0; k < PRIMER_LEN; k++) {
+    const i = startIdx + k;
+    const x = bpX(i);
+    const yk = baseY[k] + 9;  // base sits just below the backbone point
+    s += baseCircle(x, yk, PRIMER_SEQ[k], false);
+    if (a > 0.45 && matchArr[k]) {
+      const by = botY[i] - 9;
+      s += hbondTicks(x, yk + 9, by, PRIMER_SEQ[k], (a - 0.45) * 1.8);
+    }
+  }
+
+  if (a > 0.55) {
+    const labX = (px0 + pxN) / 2;
+    if (site === 'target') {
+      s += '<text x="'+(pxN+16)+'" y="'+(py+4)+'" font-family="JetBrains Mono" font-size="9" font-weight="700" fill="var(--primer-deep)">3\u2032-OH\u2192</text>';
+      s += '<text x="'+labX+'" y="'+(py-14)+'" text-anchor="middle" font-family="JetBrains Mono" font-size="9" font-weight="700" fill="var(--primer-deep)">primer \u00b7 anelamento espec\u00edfico</text>';
+    } else {
+      s += '<text x="'+labX+'" y="'+(py-loopLift-14)+'" text-anchor="middle" font-family="JetBrains Mono" font-size="9" font-weight="700" fill="var(--oxblood)">primer \u00b7 anelamento INESPEC\u00cdFICO</text>';
+      s += '<text x="'+labX+'" y="'+(py+30)+'" text-anchor="middle" font-family="JetBrains Mono" font-size="8" font-weight="700" fill="var(--oxblood)">s\u00f3 os G\u00b7C pareiam \u00b7 A\u00b7T ficam soltos</text>';
+    }
+  }
+  s += '</g>';
+  return s;
+}
+function render() {
+  document.getElementById('main-svg').innerHTML = svgScene();
+  updateUI();
+}
+function updateUI() {
+  const t = Math.round(state.temp);
+  document.getElementById('stat-temp').textContent = t + '\u00b0C';
+  document.getElementById('temp-big').textContent = t + '\u00b0C';
+  document.getElementById('stat-hbonds').textContent = countHBonds();
+  let col;
+  if (t < 50) col = 'var(--cold)';
+  else if (t < 70) col = 'var(--cool)';
+  else if (t < 85) col = 'var(--warm)';
+  else col = 'var(--hot)';
+  document.getElementById('temp-big').style.color = col;
+  const ao = avgOpen();
+  let label, short;
+  if (ao < 0.15) { label = 'DUPLA FITA EST\u00c1VEL'; short = 'dupla fita'; }
+  else if (ao < 0.55) { label = 'DESNATURA\u00c7\u00c3O PARCIAL'; short = 'parcial'; }
+  else if (ao < 0.9) { label = 'QUASE SEPARADA'; short = 'abrindo'; }
+  else { label = 'FITAS SEPARADAS'; short = 'separada'; }
+  if (state.primerBind > 0.6 && state.primerSite === 'misprime') { label = 'ANELAMENTO INESPEC\u00cdFICO'; short = 'inespec\u00edfico'; }
+  else if (state.primerBind > 0.6 && state.primerSite === 'target') { label = 'PRIMER ANELADO (espec\u00edfico)'; short = 'primer \u2713'; }
+  document.getElementById('temp-label').textContent = label;
+  document.getElementById('temp-label').style.color = (state.primerSite === 'misprime' && state.primerBind > 0.6) ? 'var(--oxblood)' : col;
+  document.getElementById('stat-state').textContent = short;
+  const heat = (t - 25) / (98 - 25);
+  document.getElementById('temp-tint').style.background =
+    'radial-gradient(circle at 50% 50%, rgba(220,38,38,'+(heat*0.10)+') 0%, transparent 70%)';
+}
+function startLoop() {
+  if (animLoop) return;
+  let last = performance.now();
+  function tick(now) {
+    const dt = Math.min(50, now - last);
+    last = now;
+    stepPhysics(dt);
+    render();
+    animLoop = requestAnimationFrame(tick);
+  }
+  animLoop = requestAnimationFrame(tick);
+}
+function showToast(html, kind) {
+  const el = document.getElementById('toast');
+  el.innerHTML = html;
+  el.classList.remove('win','warn');
+  if (kind) el.classList.add(kind);
+  el.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(() => el.classList.remove('show'), 4200);
+}
+let ms = { melted:false, ideal:false, cold:false, noPrimer:false };
+function checkMilestones(prev, now) {
+  if (now > TM_GC + 3 && !ms.melted) {
+    ms.melted = true;
+    showToast('\ud83d\udd25 Acima da Tm do G\u00b7C: <strong>todas as pontes rompidas</strong>. Note que o G\u00b7C resistiu at\u00e9 o final.', 'warn');
+  }
+  if (state.primersOn && now < T_ANNEAL_IDEAL_HI && now >= T_ANNEAL_TOO_COLD && ms.melted && !ms.ideal) {
+    ms.ideal = true;
+    setTimeout(() => showToast('\u2713 Temperatura de anelamento ideal: o primer ancorou no <strong>alvo correto</strong> (transi\u00e7\u00e3o) \u2014 G\u00b7C e A\u00b7T todos pareados.', 'win'), 500);
+  }
+  if (state.primersOn && now < T_ANNEAL_TOO_COLD - 2 && !ms.cold) {
+    ms.cold = true;
+    setTimeout(() => showToast('\u26a0\ufe0f Frio demais: os <strong>G\u00b7C seguram o primer sozinhos</strong> numa regi\u00e3o errada; os A\u00b7T n\u00e3o encontram par e ficam soltos. Anelamento inespec\u00edfico.', 'warn'), 500);
+  }
+  if (now < TM_AT - 5 && prev >= now && ms.melted && !state.primersOn && !ms.noPrimer) {
+    ms.noPrimer = true;
+    setTimeout(() => showToast('Sem primers: as fitas longas <strong>reanelam entre si</strong> \u2014 volta ao DNA original. Ative os primers e compare.', 'warn'), 600);
+  }
+}
+const slider = document.getElementById('temp-slider');
+slider.addEventListener('input', () => {
+  const prev = state.temp;
+  state.temp = parseInt(slider.value);
+  checkMilestones(prev, state.temp);
+});
+const toggle = document.getElementById('primer-toggle');
+toggle.addEventListener('click', () => {
+  state.primersOn = !state.primersOn;
+  toggle.classList.toggle('on', state.primersOn);
+  const info = document.getElementById('info-card');
+  if (state.primersOn) {
+    info.innerHTML = '<strong>Primers ativos.</strong> Aque\u00e7a para separar as fitas. Depois resfrie: pare em ~50\u201355\u00b0C (anelamento espec\u00edfico) e depois abaixo de ~40\u00b0C (anelamento inespec\u00edfico). Compare.';
+    showToast('Primers adicionados. Aque\u00e7a e resfrie at\u00e9 diferentes temperaturas para comparar.', 'win');
+  } else {
+    info.innerHTML = 'Aque\u00e7a acima da Tm para separar as fitas. Depois resfrie e observe o reanelamento. Ative os primers e compare em diferentes temperaturas.';
+  }
+  ms.ideal = false; ms.cold = false; ms.noPrimer = false;
+});
+render();
+startLoop();
+setTimeout(() => showToast('Arraste a temperatura para aquecer e separar as fitas. Repare em qual regi\u00e3o abre primeiro.'), 600);
+</script>
+
+<style id="__fitcss">
+  html,body{height:100%!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important;}
+  #__fit{position:fixed;left:0;top:0;width:1360px;transform-origin:0 0;}
+  .ghost{transform:scale(var(--fit-scale,1))!important;transform-origin:top left!important;}
+</style>
+<script>
+(function(){
+  var DW=1360;
+  function build(){
+    var b=document.body;
+    if(document.getElementById('__fit'))return document.getElementById('__fit');
+    var fit=document.createElement('div');fit.id='__fit';
+    var kids=[];for(var i=0;i<b.childNodes.length;i++)kids.push(b.childNodes[i]);
+    kids.forEach(function(n){ if(n.nodeType===1 && n.tagName==='SCRIPT') return; if(n.nodeType===1 && n.id==='__fitcss') return; fit.appendChild(n); });
+    b.appendChild(fit);
+    return fit;
+  }
+  var fit=build();
+  function doFit(){
+    if(!fit)return;
+    fit.style.transform='none';
+    var DH=fit.scrollHeight||1;
+    var vw=document.documentElement.clientWidth||window.innerWidth;
+    var vh=document.documentElement.clientHeight||window.innerHeight;
+    var s=Math.min(vw/DW, vh/DH);
+    if(!isFinite(s)||s<=0)s=1;
+    var w=DW*s, h=DH*s, ox=(vw-w)/2, oy=(vh-h)/2;
+    fit.style.transform='translate('+ox+'px,'+oy+'px) scale('+s+')';
+    document.documentElement.style.setProperty('--fit-scale', s);
+  }
+  window.addEventListener('resize',doFit);
+  window.addEventListener('load',doFit);
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(doFit);}
+  doFit();setTimeout(doFit,150);setTimeout(doFit,500);setTimeout(doFit,1200);
+})();
+</script>
+
+</body>
+</html>
