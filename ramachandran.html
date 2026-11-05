@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Por que o gráfico de Ramachandran tem buracos?</title>
+<style>
+:root{
+  --petrol:#0B3C49; --teal:#0E7C7B; --teal-l:#9FD3CF; --tint:#EEF5F4; --ink:#1B2A33; --muted:#5D6D74;
+  --amber:#E07A2F; --amber-t:#FCEFE4; --purple:#6C4BA0; --purple-t:#EFEAF6; --red:#C0392B; --red-t:#F8E6E4;
+  --line:#C9D6D8; --white:#fff; --r:14px;
+  --head: Cambria, "Cambria Math", Georgia, "Times New Roman", serif;
+  --body: Calibri, Carlito, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--white);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45}
+header{background:var(--petrol);color:#fff;padding:22px 20px 18px}
+header .wrap,main{max-width:1180px;margin:0 auto}
+header h1{font-family:var(--head);font-size:clamp(24px,3.4vw,34px);margin:0 0 6px;line-height:1.15}
+header p{margin:0;color:#BFE3E1;max-width:760px}
+nav.steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+nav.steps button{font:inherit;font-size:14px;border:1px solid rgba(255,255,255,.28);background:transparent;color:#BFE3E1;border-radius:999px;padding:6px 12px;cursor:pointer}
+nav.steps button[aria-current="step"]{background:#fff;color:var(--petrol);border-color:#fff;font-weight:700}
+nav.steps button:disabled{opacity:.4;cursor:not-allowed}
+main{padding:22px 20px 60px}
+section.step{display:none}
+section.step.on{display:block}
+h2{font-family:var(--head);color:var(--petrol);font-size:clamp(21px,2.6vw,27px);margin:4px 0 8px}
+.lead{color:var(--muted);margin:0 0 16px;max-width:820px}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--tint);border-radius:var(--r);padding:14px 16px}
+.card.white{background:#fff;border:1px solid var(--line)}
+.canvas-box{position:relative;background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;touch-action:none}
+canvas{display:block;width:100%;height:auto}
+.hint{position:absolute;left:10px;bottom:8px;font-size:12.5px;color:var(--muted);background:rgba(255,255,255,.85);padding:2px 6px;border-radius:6px;pointer-events:none}
+.ctrl{display:grid;grid-template-columns:54px 1fr 64px;gap:10px;align-items:center;margin:8px 0}
+.ctrl label{font-family:var(--head);font-size:22px;font-weight:700}
+.ctrl output{font-variant-numeric:tabular-nums;text-align:right;font-weight:700}
+input[type=range]{width:100%;height:30px;accent-color:var(--teal)}
+#phiR,#phiR3{accent-color:var(--amber)} #psiR,#psiR3{accent-color:var(--purple)}
+button.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button.btn{font:inherit;border:0;border-radius:10px;padding:10px 16px;cursor:pointer;background:var(--teal);color:#fff;font-weight:700}
+button.btn.ghost{background:#fff;color:var(--petrol);border:1px solid var(--line);font-weight:600}
+button.btn.amber{background:var(--amber)}
+button.btn:focus-visible,nav.steps button:focus-visible,canvas:focus-visible,input:focus-visible,.seg button:focus-visible,.opt:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{font:inherit;border:0;background:#fff;padding:8px 14px;cursor:pointer;color:var(--petrol)}
+.seg button[aria-pressed="true"]{background:var(--petrol);color:#fff;font-weight:700}
+.status{border-radius:12px;padding:12px 14px;margin-top:12px;min-height:84px}
+.status.s0{background:var(--tint)} .status.s1{background:var(--amber-t)} .status.s2{background:var(--red-t)}
+.status b.tag{font-size:18px}
+.s0 b.tag{color:var(--teal)} .s1 b.tag{color:var(--amber)} .s2 b.tag{color:var(--red)}
+.status ul{margin:6px 0 0;padding-left:18px} .status li{margin:2px 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.tasks{display:grid;gap:10px;margin-top:4px}
+.task{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.task .n{width:30px;height:30px;border-radius:50%;background:var(--line);color:#fff;font-weight:700;display:grid;place-items:center}
+.task.done{border-color:var(--teal);background:var(--tint)} .task.done .n{background:var(--teal)}
+.task p{margin:0}
+.task small{color:var(--muted)}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.opt{font:inherit;font-size:15px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;cursor:pointer}
+.opt.right{background:var(--teal);color:#fff;border-color:var(--teal)} .opt.wrong{background:var(--red-t);border-color:var(--red)}
+.big{font-family:var(--head);font-size:clamp(22px,3vw,30px);color:var(--petrol);line-height:1.25;margin:10px 0 16px;max-width:900px}
+textarea{width:100%;min-height:120px;font:inherit;border:1px solid var(--line);border-radius:12px;padding:12px}
+.reveal{display:none} .reveal.on{display:block}
+.stats{display:flex;gap:22px;flex-wrap:wrap;margin:10px 0}
+.stat b{display:block;font-family:var(--head);font-size:30px;color:var(--teal)} .stat span{color:var(--muted);font-size:14px}
+.foot{margin-top:28px;font-size:13px;color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Por que o gráfico de Ramachandran tem buracos?</h1>
+    <p>Gire a cadeia de um aminoácido nos ângulos φ e ψ e descubra, átomo por átomo, quais conformações são possíveis.</p>
+    <nav class="steps" aria-label="Etapas da atividade">
+      <button data-go="1" aria-current="step">1 · Palpite</button>
+      <button data-go="2" disabled>2 · Explorar</button>
+      <button data-go="3" disabled>3 · Desafios</button>
+      <button data-go="4" disabled>4 · O mapa inteiro</button>
+      <button data-go="5" disabled>5 · Para pensar</button>
+    </nav>
+  </div>
+</header>
+<main>
+  <!-- 1 PALPITE -->
+  <section class="step on" id="s1" aria-labelledby="h1s">
+    <h2 id="h1s">Antes de mexer: qual é o seu palpite?</h2>
+    <p class="lead">Cada ponto deste mapa é uma combinação de φ e ψ. Pinte as regiões onde você acha que a cadeia consegue ficar sem que os átomos se choquem. Toque ou arraste sobre os quadros; toque de novo para apagar.</p>
+    <div class="grid">
+      <div class="canvas-box"><canvas id="guess" width="640" height="640" tabindex="0" aria-label="Mapa de palpite: grade de 12 por 12 quadros de φ e ψ. Use as setas para mover e Enter para pintar."></canvas></div>
+      <div>
+        <div class="card">
+          <p style="margin-top:0"><b>Como ler o mapa</b></p>
+          <p>Eixo horizontal: <b style="color:var(--amber)">φ (phi)</b>, a rotação em torno da ligação N–Cα.<br>Eixo vertical: <b style="color:var(--purple)">ψ (psi)</b>, a rotação em torno da ligação Cα–C′.</p>
+          <p style="margin-bottom:0">Os dois vão de −180° a +180°. O mapa "dá a volta": a borda de cima encontra a de baixo, e a da esquerda encontra a da direita.</p>
+        </div>
+        <p id="guessCount" class="lead" style="margin-top:14px">Nenhum quadro pintado.</p>
+        <div class="row"><button class="btn" id="toExplore">Pronto, quero testar</button><button class="btn ghost" id="clearGuess">Limpar</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 EXPLORAR -->
+  <section class="step" id="s2" aria-labelledby="h2s">
+    <h2 id="h2s">Gire a cadeia e veja quem se choca</h2>
+    <p class="lead">A molécula é um trecho mínimo de cadeia: o resíduo central (alanina) entre o fim do resíduo anterior e o começo do seguinte. Arraste a molécula para girá-la no espaço. Use os controles para mudar φ e ψ, ou toque direto no mapa.</p>
+    <div class="grid">
+      <div>
+        <div class="canvas-box"><canvas id="mol" width="720" height="560" aria-label="Modelo 3D do dipeptídeo; arraste para girar"></canvas><span class="hint">arraste para girar</span></div>
+        <div class="ctrl"><label for="phiR" style="color:var(--amber)">φ</label><input id="phiR" type="range" min="-180" max="180" step="5" value="-60"><output id="phiO" for="phiR">−60°</output></div>
+        <div class="ctrl"><label for="psiR" style="color:var(--purple)">ψ</label><input id="psiR" type="range" min="-180" max="180" step="5" value="-45"><output id="psiO" for="psiR">−45°</output></div>
+        <div class="row">
+          <div class="seg" role="group" aria-label="Resíduo central"><button id="bAla" aria-pressed="true">Alanina</button><button id="bGly" aria-pressed="false">Glicina</button></div>
+          <div class="seg" role="group" aria-label="Volumes atômicos"><button id="bVol" aria-pressed="false">Mostrar volumes</button></div>
+          <button class="btn amber" id="mark">Marcar no mapa</button>
+        </div>
+        <div id="status" class="status s0" aria-live="polite"></div>
+      </div>
+      <div>
+        <div class="canvas-box"><canvas id="map" width="640" height="640" tabindex="0" aria-label="Mapa φ × ψ. Toque para escolher uma conformação. Setas mudam φ e ψ; Enter marca."></canvas></div>
+        <div class="legend" id="legend2">
+          <span><i style="background:var(--teal)"></i>marca: permitida</span>
+          <span><i style="background:var(--amber)"></i>marca: no limite</span>
+          <span><i style="background:var(--red)"></i>marca: choque</span>
+          <span><i style="background:rgba(108,75,160,.22)"></i>seu palpite</span>
+        </div>
+        <p class="lead" style="margin-top:12px">Marque pelo menos 8 conformações diferentes, espalhadas pelo mapa, para liberar os desafios.</p>
+        <div class="row"><span id="markCount" class="lead" style="margin:0">0 marcas</span><button class="btn" id="toTasks" disabled>Ir para os desafios</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 DESAFIOS -->
+  <section class="step" id="s3" aria-labelledby="h3s">
+    <h2 id="h3s">Desafios</h2>
+    <p class="lead">A molécula e o mapa continuam funcionando aqui. Cada desafio se completa quando você marca no mapa uma conformação que o cumpre.</p>
+    <div class="grid">
+      <div>
+        <div class="canvas-box"><canvas id="mol3" width="720" height="460" aria-hidden="true"></canvas></div>
+        <div class="ctrl"><label for="phiR3" style="color:var(--amber)">φ</label><input id="phiR3" type="range" min="-180" max="180" step="5" value="-60"><output id="phiO3">−60°</output></div>
+        <div class="ctrl"><label for="psiR3" style="color:var(--purple)">ψ</label><input id="psiR3" type="range" min="-180" max="180" step="5" value="-45"><output id="psiO3">−45°</output></div>
+        <div class="row">
+          <div class="seg" role="group" aria-label="Resíduo central"><button id="bAla3" aria-pressed="true">Alanina</button><button id="bGly3" aria-pressed="false">Glicina</button></div>
+          <button class="btn amber" id="mark3">Marcar no mapa</button>
+        </div>
+        <div id="status3" class="status s0" aria-live="polite"></div>
+      </div>
+      <div>
+        <div class="tasks" id="tasks"></div>
+        <div class="canvas-box" style="margin-top:12px"><canvas id="map3" width="640" height="640" tabindex="0" aria-label="Mapa φ × ψ dos desafios"></canvas></div>
+        <div class="row" style="margin-top:12px"><button class="btn" id="toReveal" disabled>Ver o mapa inteiro</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 REVELAÇÃO -->
+  <section class="step" id="s4" aria-labelledby="h4s">
+    <h2 id="h4s">O mapa inteiro, calculado na sua frente</h2>
+    <p class="lead">O computador testa todas as combinações de φ e ψ, de 5 em 5 graus, com a mesma regra que você usou: nenhum par de átomos pode ficar mais perto do que a soma dos seus raios de contato.</p>
+    <div class="grid">
+      <div>
+        <div class="canvas-box"><canvas id="full" width="640" height="640" aria-label="Mapa calculado de conformações permitidas"></canvas></div>
+        <div class="legend">
+          <span><i style="background:var(--teal)"></i>permitida</span>
+          <span><i style="background:var(--teal-l)"></i>só no limite externo</span>
+          <span><i style="background:#F3F5F6;border:1px solid var(--line)"></i>choque</span>
+          <span><i style="background:rgba(108,75,160,.30)"></i>seu palpite</span>
+        </div>
+      </div>
+      <div>
+        <div class="row" style="margin-bottom:10px">
+          <div class="seg" role="group" aria-label="Resíduo do mapa"><button id="fAla" aria-pressed="true">Alanina</button><button id="fGly" aria-pressed="false">Glicina</button></div>
+          <div class="seg" role="group" aria-label="Sobreposições"><button id="fGuess" aria-pressed="true">Seu palpite</button><button id="fMarks" aria-pressed="false">Suas marcas</button></div>
+        </div>
+        <button class="btn" id="run">Calcular o mapa</button>
+        <div class="stats" id="stats"></div>
+        <div class="card reveal" id="readmap">
+          <p style="margin-top:0"><b>O que apareceu</b></p>
+          <p><b style="color:var(--teal)">β</b> (no alto, à esquerda): cadeia estendida, a das folhas β.<br>
+             <b style="color:var(--teal)">αR</b> (embaixo, à esquerda): a região da hélice α.<br>
+             <b style="color:var(--teal)">αL</b> (pequena, à direita): hélice canhota, rara fora da glicina.</p>
+          <p style="margin-bottom:0">Compare com o seu palpite: quanto do mapa você imaginava livre?</p>
+        </div>
+        <div class="row" style="margin-top:14px"><button class="btn" id="toExit" disabled>Seguir</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 SAÍDA -->
+  <section class="step" id="s5" aria-labelledby="h5s">
+    <h2 id="h5s">Para pensar</h2>
+    <p class="big">A cadeia poderia girar livremente em φ e ψ. Por que a maior parte do mapa fica vazia, e por que a glicina escapa dessa regra?</p>
+    <label for="answer" class="sr">Sua resposta</label>
+    <textarea id="answer" placeholder="Escreva com suas palavras, citando pelo menos um par de átomos que você viu colidir."></textarea>
+    <div class="row" style="margin-top:12px"><button class="btn" id="showComment" disabled>Ver comentário</button></div>
+    <div class="card reveal" id="comment" style="margin-top:14px">
+      <p style="margin-top:0">Os ângulos φ e ψ giram, mas os átomos têm volume. Em muitas combinações, átomos de resíduos vizinhos ou a cadeia lateral ficam mais perto do que permitem seus raios: é o impedimento estérico. Sobram poucas regiões livres, e são justamente as das hélices α e das folhas β.</p>
+      <p style="margin-bottom:0">Na glicina, a cadeia lateral é só um hidrogênio. Sem o Cβ, desaparecem vários choques, e regiões proibidas para os outros aminoácidos ficam acessíveis. Por isso a glicina aparece em voltas e alças com φ positivo, e por isso o gráfico de Ramachandran do seu modelo (item 9 do trabalho) é avaliado separando glicina e prolina.</p>
+    </div>
+    <p class="foot">Modelo de esferas rígidas, como o de Ramachandran (1963): geometria do grupo peptídico de Pauling-Corey, ângulo N–Cα–C′ de 110°, distâncias mínimas de contato "normal" e "limite externo" para átomos separados por quatro ou mais ligações. É uma simplificação: proteínas reais também sentem pontes de hidrogênio e interações eletrostáticas.</p>
+  </section>
+</main>
+
+<script>
+/* Motor do dipeptídeo de alanina (Ace-Ala-NMe): geometria e choques estéricos.
+   Geometria do grupo peptídico de Pauling-Corey; contatos entre átomos separados por 4 ou mais ligações.
+   Modelo de esferas rígidas de Ramachandran: distâncias mínimas de contato
+   "normalmente permitidas" e "limite externo" (Ramachandran & Sasisekharan, 1968).
+   Usado pela atividade HTML e pela animação. */
+(function (root) {
+  const D2R = Math.PI / 180;
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  const mul = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const norm = (a) => mul(a, 1 / Math.hypot(a[0], a[1], a[2]));
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+  // NeRF: posiciona D dado A, B, C, comprimento C–D, ângulo B–C–D e diedro A–B–C–D
+  function place(A, B, C, len, ang, tor) {
+    const bc = norm(sub(C, B));
+    const n = norm(cross(sub(B, A), bc));
+    const m = cross(n, bc);
+    const a = ang * D2R, t = tor * D2R;
+    const d2 = [-len * Math.cos(a), len * Math.sin(a) * Math.cos(t), len * Math.sin(a) * Math.sin(t)];
+    return add(C, add(add(mul(bc, d2[0]), mul(m, d2[1])), mul(n, d2[2])));
+  }
+
+  // átomos: rótulo, elemento, raio de desenho
+  const ATOMS = [
+    { id: "CMa", el: "C", nome: "CH₃ (acetil)" },
+    { id: "C0", el: "C", nome: "C′ do resíduo anterior" },
+    { id: "O0", el: "O", nome: "O do resíduo anterior" },
+    { id: "N1", el: "N", nome: "N" },
+    { id: "H1", el: "H", nome: "H do N" },
+    { id: "CA", el: "C", nome: "Cα" },
+    { id: "HA", el: "H", nome: "Hα" },
+    { id: "CB", el: "C", nome: "Cβ" },
+    { id: "C1", el: "C", nome: "C′" },
+    { id: "O1", el: "O", nome: "O" },
+    { id: "N2", el: "N", nome: "N do resíduo seguinte" },
+    { id: "H2", el: "H", nome: "H do resíduo seguinte" },
+    { id: "CMb", el: "C", nome: "CH₃ (N-metil)" },
+  ];
+  const BONDS = [["CMa", "C0"], ["C0", "O0"], ["C0", "N1"], ["N1", "H1"], ["N1", "CA"], ["CA", "HA"], ["CA", "CB"], ["CA", "C1"], ["C1", "O1"], ["C1", "N2"], ["N2", "H2"], ["N2", "CMb"]];
+
+  const L = { NCA: 1.458, CAC: 1.525, CN: 1.329, CO: 1.231, NH: 1.0, CAH: 1.0, CACB: 1.53, CC: 1.52 };
+  const TAU = 110; // ângulo N–Cα–C′
+
+  function build(phi, psi, gly) {
+    const P = {};
+    P.N1 = [0, 0, 0];
+    P.CA = [L.NCA, 0, 0];
+    const a = (180 - 123.0) * D2R; // C′(i−1)–N–Cα = 121,7°
+    P.C0 = [-L.CN * Math.cos(a), L.CN * Math.sin(a), 0];
+    P.CMa = place(P.CA, P.N1, P.C0, L.CC, 114.0, 180);
+    P.O0 = place(P.CA, P.N1, P.C0, L.CO, 125.0, 0);
+    P.H1 = place(P.O0, P.C0, P.N1, L.NH, 118.5, 180);
+    P.C1 = place(P.C0, P.N1, P.CA, L.CAC, TAU, phi);
+    // Cβ e Hα: as duas posições tetraédricas restantes; escolhe a quiralidade L
+    const p1 = place(P.C0, P.N1, P.CA, L.CACB, 110.5, phi + 122.5);
+    const p2 = place(P.C0, P.N1, P.CA, L.CACB, 110.5, phi - 122.5);
+    const vol = (cb) => dot(sub(P.N1, P.CA), cross(sub(P.C1, P.CA), sub(cb, P.CA)));
+    const cb = vol(p1) > 0 ? p1 : p2, ha = cb === p1 ? p2 : p1;
+    P.CB = cb;
+    P.HA = add(P.CA, mul(norm(sub(ha, P.CA)), L.CAH));
+    if (gly) P.CB = add(P.CA, mul(norm(sub(cb, P.CA)), L.CAH)); // na glicina, Cβ vira um H
+    P.N2 = place(P.N1, P.CA, P.C1, L.CN, 114.0, psi);
+    P.O1 = place(P.N1, P.CA, P.C1, L.CO, 121.0, psi + 180);
+    P.H2 = place(P.O1, P.C1, P.N2, L.NH, 118.5, 180);
+    P.CMb = place(P.CA, P.C1, P.N2, L.NCA, 123.0, 180);
+    return P;
+  }
+
+  // distâncias mínimas de contato (Å): [normal, limite externo]
+  const CONTACT = {
+    "C-C": [3.2, 3.0], "C-N": [2.9, 2.8], "C-O": [2.8, 2.7], "C-H": [2.4, 2.2],
+    "N-N": [2.7, 2.6], "N-O": [2.7, 2.6], "N-H": [2.4, 2.2],
+    "O-O": [2.8, 2.7], "O-H": [2.4, 2.2], "H-H": [2.0, 1.9],
+  };
+  const elOf = (id, gly) => (gly && id === "CB" ? "H" : ATOMS.find((a) => a.id === id).el);
+  function limits(i, j, gly) {
+    const e = [elOf(i, gly), elOf(j, gly)].sort((a, b) => "CNOH".indexOf(a) - "CNOH".indexOf(b));
+    return CONTACT[e[0] + "-" + e[1]];
+  }
+
+  // pares cuja distância depende de φ ou ψ (os demais são fixos pela geometria)
+  // separação em número de ligações (grafo da molécula)
+  function bondSep(a, b) {
+    const adj = {}; ATOMS.forEach((x) => (adj[x.id] = []));
+    BONDS.forEach(([x, y]) => { adj[x].push(y); adj[y].push(x); });
+    const q = [[a, 0]], seen = new Set([a]);
+    while (q.length) { const [x, d] = q.shift(); if (x === b) return d; for (const y of adj[x]) if (!seen.has(y)) { seen.add(y); q.push([y, d + 1]); } }
+    return Infinity;
+  }
+  // considera átomos separados por 4 ou mais ligações (contatos 1–5 em diante)
+  let PAIRS = null;
+  function pairs() {
+    if (PAIRS) return PAIRS;
+    const ids = ATOMS.map((a) => a.id);
+    const g1 = build(-60, -45, false), g2 = build(60, 150, false), g3 = build(-150, 60, false);
+    PAIRS = [];
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+      const a = ids[i], b = ids[j];
+      const ds = [g1, g2, g3].map((g) => dist(g[a], g[b]));
+      if (Math.max(...ds) - Math.min(...ds) > 0.01 && bondSep(a, b) >= 4) PAIRS.push([a, b]);
+    }
+    return PAIRS;
+  }
+
+  // classifica uma conformação: 0 permitido, 1 limite externo, 2 proibido
+  function check(phi, psi, gly) {
+    const P = build(phi, psi, gly);
+    let worst = 0; const hits = [];
+    for (const [a, b] of pairs()) {
+      const d = dist(P[a], P[b]);
+      const [nrm, out] = limits(a, b, gly);
+      if (d < nrm) {
+        const sev = d < out ? 2 : 1;
+        hits.push({ a, b, d, nrm, out, sev });
+        if (sev > worst) worst = sev;
+      }
+    }
+    hits.sort((x, y) => (y.sev - x.sev) || ((x.d - x.out) - (y.d - y.out)));
+    return { status: worst, hits, P };
+  }
+
+  function map(step, gly) {
+    const out = [];
+    for (let psi = 180 - step / 2; psi > -180; psi -= step) {
+      const row = [];
+      for (let phi = -180 + step / 2; phi < 180; phi += step) row.push(check(phi, psi, gly).status);
+      out.push(row);
+    }
+    return out;
+  }
+
+  const API = { ATOMS, BONDS, build, check, map, pairs, limits, CONTACT, dist };
+  if (typeof module !== "undefined") module.exports = API; else root.Rama = API;
+})(this);
+
+</script>
+<script>
+(() => {
+"use strict";
+const R = window.Rama;
+const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+const C = { petrol:"#0B3C49", teal:"#0E7C7B", tealL:"#9FD3CF", amber:"#E07A2F", purple:"#6C4BA0", red:"#C0392B", ink:"#1B2A33", muted:"#5D6D74", line:"#C9D6D8", tint:"#EEF5F4" };
+const fmt = (v) => (v < 0 ? "−" + Math.abs(v) : String(v)) + "°";
+const NAMES = Object.fromEntries(R.ATOMS.map(a => [a.id, a.nome]));
+function nm(id, gly){ return (gly && id === "CB") ? "H que substitui o Cβ" : NAMES[id]; }
+const dec = (x) => x.toFixed(2).replace(".", ",");
+
+// ---------- estado ----------
+const S = { step: 1, maxStep: 1, phi: -60, psi: -45, gly: false, vol: false, guess: new Set(), marks: [], yaw: 0.3, pitch: -0.6, tasks: {}, reveal: { gly: false, showGuess: true, showMarks: false, done: false } };
+
+// ---------- navegação ----------
+const navBtns = [...document.querySelectorAll("nav.steps button")];
+function go(n){
+  S.step = n; S.maxStep = Math.max(S.maxStep, n);
+  document.querySelectorAll("section.step").forEach(s => s.classList.toggle("on", s.id === "s" + n));
+  navBtns.forEach(b => { const k = +b.dataset.go; b.disabled = k > S.maxStep; b.toggleAttribute("aria-current", false); if (k === n) b.setAttribute("aria-current", "step"); });
+  if (n === 2 || n === 3) syncAll();
+  if (n === 4) drawFull();
+  window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+}
+navBtns.forEach(b => b.addEventListener("click", () => go(+b.dataset.go)));
+
+// ---------- utilidades de canvas ----------
+function fitCanvas(cv){ const r = cv.getBoundingClientRect(); const dpr = Math.min(window.devicePixelRatio || 1, 2); const w = Math.round(r.width * dpr), h = Math.round(r.width * (cv.height / cv.width) * dpr); if (cv._w !== w){ cv._ratio = cv.height / cv.width; cv.width = w; cv.height = Math.round(w * cv._ratio); cv._w = w; } return cv.getContext("2d"); }
+const DPR = () => Math.min(window.devicePixelRatio || 1, 2);
+function evPos(cv, e){ const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; }
+
+// geometria comum dos mapas
+const PAD = { l: 0.11, r: 0.03, t: 0.03, b: 0.11 };
+function mapRect(cv){ return { x: cv.width * PAD.l, y: cv.height * PAD.t, w: cv.width * (1 - PAD.l - PAD.r), h: cv.height * (1 - PAD.t - PAD.b) }; }
+function toXY(cv, phi, psi){ const m = mapRect(cv); return [m.x + (phi + 180) / 360 * m.w, m.y + (180 - psi) / 360 * m.h]; }
+function fromXY(cv, fx, fy){ const m = mapRect(cv); const x = fx * cv.width, y = fy * cv.height; const phi = (x - m.x) / m.w * 360 - 180, psi = 180 - (y - m.y) / m.h * 360; return [phi, psi]; }
+const snap = (v) => Math.max(-180, Math.min(180, Math.round(v / 5) * 5));
+function drawAxes(ctx, cv){
+  const m = mapRect(cv), u = Math.max(cv.width / 640, DPR() * 0.9);
+  ctx.strokeStyle = C.line; ctx.lineWidth = 1 * u;
+  for (let v = -180; v <= 180; v += 90){
+    const [x] = toXY(cv, v, 0), [, y] = toXY(cv, 0, v);
+    ctx.beginPath(); ctx.moveTo(x, m.y); ctx.lineTo(x, m.y + m.h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(m.x, y); ctx.lineTo(m.x + m.w, y); ctx.stroke();
+  }
+  ctx.strokeStyle = C.muted; ctx.lineWidth = 1.5 * u; ctx.strokeRect(m.x, m.y, m.w, m.h);
+  ctx.fillStyle = C.muted; ctx.font = `${13 * u}px Calibri, Carlito, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (let v = -180; v <= 180; v += 90){ const [x] = toXY(cv, v, 0); ctx.fillText(fmt(v), x, m.y + m.h + 6 * u); }
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let v = -180; v <= 180; v += 90){ const [, y] = toXY(cv, 0, v); ctx.fillText(fmt(v), m.x - 6 * u, y); }
+  ctx.font = `bold ${20 * u}px Cambria, Georgia, serif`; ctx.fillStyle = C.amber; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+  ctx.fillText("φ", m.x + m.w / 2, cv.height - 2 * u);
+  ctx.save(); ctx.translate(16 * u, m.y + m.h / 2); ctx.fillStyle = C.purple; ctx.textBaseline = "middle"; ctx.fillText("ψ", 0, 0); ctx.restore();
+}
+
+// ---------- 1 · palpite ----------
+const G = 12; // grade 12×12 (30°)
+const gcv = document.getElementById("guess");
+let gCursor = [5, 5], painting = null;
+function cellOf(fx, fy){ const [phi, psi] = fromXY(gcv, fx, fy); const i = Math.floor((phi + 180) / 30), j = Math.floor((180 - psi) / 30); return (i >= 0 && i < G && j >= 0 && j < G) ? [i, j] : null; }
+function drawGuessLayer(ctx, cv, alpha){
+  const m = mapRect(cv);
+  ctx.fillStyle = `rgba(108,75,160,${alpha})`;
+  S.guess.forEach(k => { const [i, j] = k.split(",").map(Number); ctx.fillRect(m.x + i * m.w / G, m.y + j * m.h / G, m.w / G, m.h / G); });
+}
+function drawGuess(){
+  const ctx = fitCanvas(gcv), m = mapRect(gcv), u = gcv.width / 640;
+  ctx.clearRect(0, 0, gcv.width, gcv.height);
+  ctx.strokeStyle = "#E3E9EA"; ctx.lineWidth = 1 * u;
+  for (let k = 0; k <= G; k++){ ctx.beginPath(); ctx.moveTo(m.x + k * m.w / G, m.y); ctx.lineTo(m.x + k * m.w / G, m.y + m.h); ctx.stroke(); ctx.beginPath(); ctx.moveTo(m.x, m.y + k * m.h / G); ctx.lineTo(m.x + m.w, m.y + k * m.h / G); ctx.stroke(); }
+  drawGuessLayer(ctx, gcv, 0.55);
+  drawAxes(ctx, gcv);
+  if (document.activeElement === gcv){ ctx.strokeStyle = C.amber; ctx.lineWidth = 3 * u; ctx.strokeRect(m.x + gCursor[0] * m.w / G, m.y + gCursor[1] * m.h / G, m.w / G, m.h / G); }
+  const n = S.guess.size;
+  document.getElementById("guessCount").textContent = n ? `${n} de 144 quadros pintados (${Math.round(n / 1.44)}% do mapa).` : "Nenhum quadro pintado.";
+}
+function toggleCell(c, mode){ const k = c.join(","); if (mode === "add") S.guess.add(k); else S.guess.delete(k); drawGuess(); }
+gcv.addEventListener("pointerdown", e => { const c = cellOf(...evPos(gcv, e)); if (!c) return; gcv.setPointerCapture(e.pointerId); painting = S.guess.has(c.join(",")) ? "del" : "add"; toggleCell(c, painting); });
+gcv.addEventListener("pointermove", e => { if (!painting) return; const c = cellOf(...evPos(gcv, e)); if (c) toggleCell(c, painting); });
+["pointerup", "pointercancel"].forEach(t => gcv.addEventListener(t, () => (painting = null)));
+gcv.addEventListener("keydown", e => {
+  const mv = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+  if (mv){ e.preventDefault(); gCursor = [(gCursor[0] + mv[0] + G) % G, (gCursor[1] + mv[1] + G) % G]; drawGuess(); }
+  if (e.key === "Enter" || e.key === " "){ e.preventDefault(); const k = gCursor.join(","); toggleCell(gCursor, S.guess.has(k) ? "del" : "add"); }
+});
+gcv.addEventListener("focus", drawGuess); gcv.addEventListener("blur", drawGuess);
+document.getElementById("clearGuess").onclick = () => { S.guess.clear(); drawGuess(); };
+document.getElementById("toExplore").onclick = () => go(2);
+
+// ---------- molécula 3D ----------
+const EL = { C: { c: "#6B7A80", r: 0.34, v: 1.7 }, N: { c: "#2E86AB", r: 0.32, v: 1.55 }, O: { c: "#C0392B", r: 0.32, v: 1.52 }, H: { c: "#F2F4F5", r: 0.21, v: 1.1 } };
+function rot(p){ const cy = Math.cos(S.yaw), sy = Math.sin(S.yaw), cp = Math.cos(S.pitch), sp = Math.sin(S.pitch);
+  const x = p[0] * cy + p[2] * sy, z0 = -p[0] * sy + p[2] * cy; const y = p[1] * cp - z0 * sp, z = p[1] * sp + z0 * cp; return [x, y, z]; }
+function drawMol(cv, res){
+  const ctx = fitCanvas(cv), W = cv.width, H = cv.height, u = Math.max(W / 720, DPR() * 0.9);
+  ctx.clearRect(0, 0, W, H);
+  const P = res.P, ids = Object.keys(P);
+  const cen = [0, 1, 2].map(k => ids.reduce((s, i) => s + P[i][k], 0) / ids.length);
+  const Q = {}; ids.forEach(i => Q[i] = rot([P[i][0] - cen[0], P[i][1] - cen[1], P[i][2] - cen[2]]));
+  const scale = Math.min(W, H) / 6.6, ox = W / 2, oy = H / 2;
+  const proj = (q) => { const f = 1 / (1 - q[2] / 22); return [ox + q[0] * scale * f, oy - q[1] * scale * f, f]; };
+  const el = (id) => (S.gly && id === "CB") ? "H" : R.ATOMS.find(a => a.id === id).el;
+  const list = [];
+  R.BONDS.forEach(([a, b]) => list.push({ t: "b", a, b, z: (Q[a][2] + Q[b][2]) / 2 - 0.01 }));
+  ids.forEach(i => list.push({ t: "a", i, z: Q[i][2] }));
+  list.sort((x, y) => x.z - y.z);
+  const hitIds = new Map(); res.hits.forEach(h => { [h.a, h.b].forEach(k => hitIds.set(k, Math.max(hitIds.get(k) || 0, h.sev))); });
+  for (const it of list){
+    if (it.t === "b"){
+      const [x1, y1, f1] = proj(Q[it.a]), [x2, y2] = proj(Q[it.b]);
+      const isPhi = (it.a === "N1" && it.b === "CA"), isPsi = (it.a === "CA" && it.b === "C1");
+      ctx.lineCap = "round";
+      ctx.strokeStyle = isPhi ? C.amber : isPsi ? C.purple : "#9AA9AE";
+      ctx.lineWidth = (isPhi || isPsi ? 0.30 : 0.2) * scale * f1;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      if (isPhi || isPsi){
+        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, rr = 15 * u;
+        ctx.fillStyle = isPhi ? C.amber : C.purple; ctx.beginPath(); ctx.arc(mx, my, rr, 0, 7); ctx.fill();
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 2 * u; ctx.stroke();
+        ctx.fillStyle = "#fff"; ctx.font = `bold ${17 * u}px Cambria, Georgia, serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(isPhi ? "φ" : "ψ", mx, my + 1 * u);
+      }
+    } else {
+      const e = EL[el(it.i)], [x, y, f] = proj(Q[it.i]);
+      if (S.vol){ ctx.fillStyle = hitIds.has(it.i) ? "rgba(192,57,43,.16)" : "rgba(14,124,123,.10)"; ctx.beginPath(); ctx.arc(x, y, e.v * 0.62 * scale * f, 0, 7); ctx.fill(); }
+      const r = e.r * scale * f;
+      const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
+      g.addColorStop(0, "#fff"); g.addColorStop(0.35, e.c); g.addColorStop(1, shade(e.c, -0.35));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+      if (it.i === "CB" && !S.gly){ ctx.strokeStyle = C.purple; ctx.lineWidth = 3 * u; ctx.stroke(); }
+      const sev = hitIds.get(it.i);
+      if (sev){ ctx.strokeStyle = sev === 2 ? C.red : C.amber; ctx.lineWidth = 3.5 * u; ctx.beginPath(); ctx.arc(x, y, r + 4 * u, 0, 7); ctx.stroke(); }
+      else if (el(it.i) === "H"){ ctx.strokeStyle = "#B8C3C7"; ctx.lineWidth = 1 * u; ctx.stroke(); }
+    }
+  }
+  // choques: linhas tracejadas com distância
+  res.hits.slice(0, 2).forEach((h, k) => {
+    const [x1, y1] = proj(Q[h.a]), [x2, y2] = proj(Q[h.b]);
+    ctx.setLineDash([6 * u, 5 * u]); ctx.strokeStyle = h.sev === 2 ? C.red : C.amber; ctx.lineWidth = 2.5 * u;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.setLineDash([]);
+    const t = dec(h.d) + " Å"; ctx.font = `bold ${14 * u}px Calibri, Carlito, sans-serif`; const tw = ctx.measureText(t).width;
+    const mx = (x1 + x2) / 2 + (k ? 0 : 0), my = (y1 + y2) / 2 + (k ? 22 * u : 0);
+    ctx.fillStyle = "rgba(255,255,255,.92)"; ctx.fillRect(mx - tw / 2 - 4 * u, my - 10 * u, tw + 8 * u, 20 * u);
+    ctx.fillStyle = h.sev === 2 ? C.red : C.amber; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, mx, my);
+  });
+  // rótulos de átomos-chave
+  ctx.font = `${13 * u}px Calibri, Carlito, sans-serif`; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  [["CA", "Cα"], ["CB", S.gly ? "H" : "Cβ"], ["O0", "O (i−1)"], ["O1", "O"], ["H2", "H (i+1)"], ["H1", "H"]].forEach(([id, lab]) => {
+    const [x, y, f] = proj(Q[id]); ctx.fillStyle = C.ink; ctx.fillText(lab, x + (EL[el(id)].r * scale * f) + 4 * u, y - 10 * u);
+  });
+}
+function shade(hex, k){ const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255; r = Math.round(r * (1 + k)); g = Math.round(g * (1 + k)); b = Math.round(b * (1 + k)); return `rgb(${r},${g},${b})`; }
+function dragRotate(cv){
+  let last = null;
+  cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); last = [e.clientX, e.clientY]; });
+  cv.addEventListener("pointermove", e => { if (!last) return; S.yaw += (e.clientX - last[0]) * 0.01; S.pitch = Math.max(-1.4, Math.min(1.4, S.pitch + (e.clientY - last[1]) * 0.01)); last = [e.clientX, e.clientY]; syncAll(true); });
+  ["pointerup", "pointercancel"].forEach(t => cv.addEventListener(t, () => (last = null)));
+}
+
+// ---------- mapas das etapas 2 e 3 ----------
+function drawMarksMap(cv){
+  const ctx = fitCanvas(cv), u = cv.width / 640;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  drawGuessLayer(ctx, cv, 0.22);
+  drawAxes(ctx, cv);
+  S.marks.forEach(mk => { const [x, y] = toXY(cv, mk.phi, mk.psi); ctx.fillStyle = [C.teal, C.amber, C.red][mk.st]; ctx.beginPath(); ctx.arc(x, y, (mk.gly ? 5 : 6.5) * u, 0, 7); ctx.fill(); if (mk.gly){ ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5 * u; ctx.stroke(); } });
+  const [x, y] = toXY(cv, S.phi, S.psi);
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5 * u; ctx.beginPath(); ctx.moveTo(x - 14 * u, y); ctx.lineTo(x + 14 * u, y); ctx.moveTo(x, y - 14 * u); ctx.lineTo(x, y + 14 * u); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, 8 * u, 0, 7); ctx.stroke();
+}
+function mapInput(cv){
+  const pick = (e) => { const [phi, psi] = fromXY(cv, ...evPos(cv, e)); if (phi < -180 || phi > 180 || psi < -180 || psi > 180) return; S.phi = snap(phi); S.psi = snap(psi); syncAll(); };
+  let down = false;
+  cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); down = true; pick(e); });
+  cv.addEventListener("pointermove", e => { if (down) pick(e); });
+  ["pointerup", "pointercancel"].forEach(t => cv.addEventListener(t, () => (down = false)));
+  cv.addEventListener("keydown", e => {
+    const mv = { ArrowLeft: [-5, 0], ArrowRight: [5, 0], ArrowUp: [0, 5], ArrowDown: [0, -5] }[e.key];
+    if (mv){ e.preventDefault(); S.phi = wrap(S.phi + mv[0]); S.psi = wrap(S.psi + mv[1]); syncAll(); }
+    if (e.key === "Enter"){ e.preventDefault(); addMark(); }
+  });
+}
+const wrap = (v) => (v > 180 ? v - 360 : v < -180 ? v + 360 : v);
+
+// ---------- status ----------
+function statusHTML(res){
+  const tag = ["Conformação permitida", "Possível, mas no limite", "Choque: conformação proibida"][res.status];
+  const lines = res.hits.slice(0, 3).map(h => `<li><b>${nm(h.a, S.gly)}</b> e <b>${nm(h.b, S.gly)}</b>: ${dec(h.d)} Å (mínimo ${dec(h.sev === 2 ? h.out : h.nrm)} Å)</li>`).join("");
+  const body = res.status === 0 ? "<div>Nenhum par de átomos está perto demais.</div>" : `<ul>${lines}</ul>`;
+  return `<b class="tag">${tag}</b> <span style="color:var(--muted)">· ${S.gly ? "glicina" : "alanina"}, φ ${fmt(S.phi)}, ψ ${fmt(S.psi)}</span>${body}`;
+}
+
+// ---------- sincronização ----------
+const ui = {
+  2: { mol: document.getElementById("mol"), map: document.getElementById("map"), phi: document.getElementById("phiR"), psi: document.getElementById("psiR"), phiO: document.getElementById("phiO"), psiO: document.getElementById("psiO"), st: document.getElementById("status"), ala: document.getElementById("bAla"), gly: document.getElementById("bGly") },
+  3: { mol: document.getElementById("mol3"), map: document.getElementById("map3"), phi: document.getElementById("phiR3"), psi: document.getElementById("psiR3"), phiO: document.getElementById("phiO3"), psiO: document.getElementById("psiO3"), st: document.getElementById("status3"), ala: document.getElementById("bAla3"), gly: document.getElementById("bGly3") },
+};
+let current = null;
+function syncAll(onlyMol){
+  current = R.check(S.phi, S.psi, S.gly);
+  const k = S.step === 3 ? 3 : 2, U = ui[k];
+  drawMol(U.mol, current);
+  if (onlyMol) return;
+  U.phi.value = S.phi; U.psi.value = S.psi; U.phiO.textContent = fmt(S.phi); U.psiO.textContent = fmt(S.psi);
+  U.phi.setAttribute("aria-valuetext", fmt(S.phi)); U.psi.setAttribute("aria-valuetext", fmt(S.psi));
+  U.st.className = "status s" + current.status; U.st.innerHTML = statusHTML(current);
+  U.ala.setAttribute("aria-pressed", String(!S.gly)); U.gly.setAttribute("aria-pressed", String(S.gly));
+  drawMarksMap(U.map);
+}
+[2, 3].forEach(k => {
+  const U = ui[k];
+  U.phi.addEventListener("input", () => { S.phi = +U.phi.value; syncAll(); });
+  U.psi.addEventListener("input", () => { S.psi = +U.psi.value; syncAll(); });
+  U.ala.onclick = () => { S.gly = false; syncAll(); };
+  U.gly.onclick = () => { S.gly = true; syncAll(); };
+  dragRotate(U.mol); mapInput(U.map);
+});
+document.getElementById("bVol").onclick = (e) => { S.vol = !S.vol; e.currentTarget.setAttribute("aria-pressed", String(S.vol)); syncAll(true); };
+
+function addMark(){
+  const st = current.status;
+  S.marks.push({ phi: S.phi, psi: S.psi, gly: S.gly, st, top: current.hits[0] || null });
+  const uniq = new Set(S.marks.map(m => m.phi + "," + m.psi + "," + m.gly)).size;
+  document.getElementById("markCount").textContent = uniq === 1 ? "1 marca" : `${uniq} marcas`;
+  document.getElementById("toTasks").disabled = uniq < 8;
+  if (S.step === 3) checkTasks(S.marks[S.marks.length - 1]);
+  syncAll();
+}
+document.getElementById("mark").onclick = addMark;
+document.getElementById("mark3").onclick = addMark;
+document.getElementById("toTasks").onclick = () => go(3);
+
+// ---------- 3 · desafios ----------
+const TASKS = [
+  { id: "a", txt: "Encontre uma conformação de <b>hélice α</b> permitida.", tip: "Dica: na hélice, φ e ψ são ambos negativos e parecidos.", ok: m => !m.gly && m.st === 0 && m.phi >= -90 && m.phi <= -40 && m.psi >= -70 && m.psi <= -25 },
+  { id: "b", txt: "Encontre uma conformação de <b>folha β</b> permitida.", tip: "Dica: na folha a cadeia fica estendida; φ negativo, ψ bem positivo.", ok: m => !m.gly && m.st === 0 && m.phi >= -170 && m.phi <= -90 && m.psi >= 100 && m.psi <= 175 },
+  { id: "c", txt: "Encontre uma conformação <b>proibida</b> e diga quais átomos colidem.", tip: "", ok: m => m.st === 2 && m.top, quiz: true },
+  { id: "d", txt: "Troque para <b>glicina</b> e encontre uma conformação que ela alcança e a alanina não.", tip: "Dica: procure do lado direito do mapa (φ positivo).", ok: m => m.gly && m.st === 0 && R.check(m.phi, m.psi, false).status === 2 },
+];
+function renderTasks(){
+  const box = document.getElementById("tasks"); box.innerHTML = "";
+  TASKS.forEach((t, i) => {
+    const d = document.createElement("div"); const done = S.tasks[t.id] === true;
+    d.className = "task" + (done ? " done" : "");
+    d.innerHTML = `<span class="n" aria-hidden="true">${done ? "✓" : i + 1}</span><div><p>${t.txt}</p>${t.tip && !done ? `<small>${t.tip}</small>` : ""}<div class="q"></div></div>`;
+    box.appendChild(d);
+    if (t.quiz && S.tasks.c && S.tasks.c !== true) buildQuiz(d.querySelector(".q"), S.tasks.c);
+    if (t.quiz && S.tasks.c === true) d.querySelector(".q").innerHTML = `<small>Isso mesmo: ${S.cAnswer}.</small>`;
+  });
+  document.getElementById("toReveal").disabled = !TASKS.every(t => S.tasks[t.id] === true);
+}
+function shuffle(a){ for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function buildQuiz(el, mk){
+  const right = `${nm(mk.top.a, mk.gly)} e ${nm(mk.top.b, mk.gly)}`;
+  const pool = R.pairs().filter(([a, b]) => !(a === mk.top.a && b === mk.top.b)).filter(([a, b]) => { const P = R.build(mk.phi, mk.psi, mk.gly); return R.dist(P[a], P[b]) > 3.4; });
+  const wrong = shuffle(pool.slice()).slice(0, 3).map(([a, b]) => `${nm(a, mk.gly)} e ${nm(b, mk.gly)}`);
+  const opts = shuffle([right, ...wrong]);
+  el.innerHTML = `<small>Você marcou φ ${fmt(mk.phi)}, ψ ${fmt(mk.psi)}. Qual par está mais perto do que deveria?</small><div class="opts" role="group"></div>`;
+  const g = el.querySelector(".opts");
+  opts.forEach(o => { const b = document.createElement("button"); b.className = "opt"; b.textContent = o; b.onclick = () => { if (o === right){ b.classList.add("right"); S.tasks.c = true; S.cAnswer = right; setTimeout(renderTasks, reduce ? 0 : 600); } else { b.classList.add("wrong"); b.disabled = true; } }; g.appendChild(b); });
+}
+function checkTasks(m){
+  TASKS.forEach(t => { if (S.tasks[t.id] === true) return; if (t.ok(m)){ if (t.quiz) S.tasks.c = m; else S.tasks[t.id] = true; } });
+  renderTasks();
+}
+renderTasks();
+document.getElementById("toReveal").onclick = () => go(4);
+
+// ---------- 4 · revelação ----------
+const fcv = document.getElementById("full");
+const MAPS = {};
+let revealProg = { gly: false, rows: 0 };
+function getMap(gly){ return MAPS[gly] || (MAPS[gly] = R.map(5, gly)); }
+function drawFull(){
+  const ctx = fitCanvas(fcv), m = mapRect(fcv), u = fcv.width / 640;
+  ctx.clearRect(0, 0, fcv.width, fcv.height);
+  ctx.fillStyle = "#F3F5F6"; ctx.fillRect(m.x, m.y, m.w, m.h);
+  const gly = S.reveal.gly, M = getMap(gly), n = M.length, cw = m.w / n, ch = m.h / n;
+  const rows = (revealProg.gly === gly) ? revealProg.rows : 0;
+  for (let j = 0; j < Math.min(rows, n); j++) for (let i = 0; i < n; i++){
+    const v = M[j][i]; if (v === 2) continue;
+    ctx.fillStyle = v === 0 ? C.teal : C.tealL; ctx.fillRect(m.x + i * cw, m.y + j * ch, cw + 0.6, ch + 0.6);
+  }
+  if (S.reveal.showGuess) drawGuessLayer(ctx, fcv, 0.30);
+  drawAxes(ctx, fcv);
+  if (S.reveal.showMarks) S.marks.filter(mk => mk.gly === gly).forEach(mk => { const [x, y] = toXY(fcv, mk.phi, mk.psi); ctx.fillStyle = [C.teal, C.amber, C.red][mk.st]; ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5 * u; ctx.beginPath(); ctx.arc(x, y, 6 * u, 0, 7); ctx.fill(); ctx.stroke(); });
+  if (rows >= n){
+    ctx.font = `bold ${26 * u}px Cambria, Georgia, serif`; ctx.fillStyle = C.petrol; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const lab = (t, phi, psi) => { const [x, y] = toXY(fcv, phi, psi); ctx.lineWidth = 5 * u; ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.strokeText(t, x, y); ctx.fillText(t, x, y); };
+    lab("β", -110, 140); lab("αR", -70, -55); lab("αL", 65, 60);
+  }
+  const f = M.flat(), pct = (v) => Math.round(100 * f.filter(x => x === v).length / f.length);
+  if (rows >= n){
+    const hit = [...S.guess].length ? guessScore(M) : null;
+    document.getElementById("stats").innerHTML =
+      `<div class="stat"><b>${pct(0)}%</b><span>do mapa permitido (${gly ? "glicina" : "alanina"})</span></div>` +
+      `<div class="stat"><b>${pct(1)}%</b><span>só no limite externo</span></div>` +
+      (hit ? `<div class="stat"><b>${hit.pct}%</b><span>do seu palpite caiu em regiões livres</span></div>` : "");
+  }
+}
+function guessScore(M){ // fração dos quadros pintados (30°) com maioria livre
+  let ok = 0; S.guess.forEach(k => { const [i, j] = k.split(",").map(Number); let free = 0, tot = 0; for (let jj = j * 6; jj < j * 6 + 6; jj++) for (let ii = i * 6; ii < i * 6 + 6; ii++){ tot++; if (M[jj][ii] < 2) free++; } if (free / tot >= 0.5) ok++; });
+  return { pct: Math.round(100 * ok / S.guess.size) };
+}
+function runReveal(){
+  const gly = S.reveal.gly, n = getMap(gly).length;
+  revealProg = { gly, rows: 0 };
+  const btn = document.getElementById("run"); btn.disabled = true;
+  if (reduce){ revealProg.rows = n; finish(); return; }
+  const tick = () => { revealProg.rows += 2; drawFull(); if (revealProg.rows < n) requestAnimationFrame(tick); else finish(); };
+  requestAnimationFrame(tick);
+  function finish(){ drawFull(); btn.disabled = false; btn.textContent = "Calcular de novo"; S.reveal.done = true; document.getElementById("readmap").classList.add("on"); document.getElementById("toExit").disabled = false; }
+}
+document.getElementById("run").onclick = runReveal;
+const seg = (ids, key, val) => ids.forEach((id, i) => { document.getElementById(id).onclick = () => { S.reveal[key] = val[i]; ids.forEach((jd, k) => document.getElementById(jd).setAttribute("aria-pressed", String(k === i))); if (key === "gly" && S.reveal.done) runReveal(); else drawFull(); }; });
+seg(["fAla", "fGly"], "gly", [false, true]);
+["fGuess", "fMarks"].forEach(id => { document.getElementById(id).onclick = (e) => { const key = id === "fGuess" ? "showGuess" : "showMarks"; S.reveal[key] = !S.reveal[key]; e.currentTarget.setAttribute("aria-pressed", String(S.reveal[key])); drawFull(); }; });
+document.getElementById("toExit").onclick = () => go(5);
+
+// ---------- 5 · saída ----------
+const ans = document.getElementById("answer"), sc = document.getElementById("showComment");
+ans.addEventListener("input", () => (sc.disabled = ans.value.trim().length < 20));
+sc.onclick = () => document.getElementById("comment").classList.add("on");
+
+// ---------- início ----------
+window.addEventListener("resize", () => { drawGuess(); if (S.step === 2 || S.step === 3) syncAll(); if (S.step === 4) drawFull(); });
+drawGuess();
+// gancho para testes automáticos
+window.__rama = { S, go, syncAll, addMark, runReveal };
+})();
+</script>
+</body>
+</html>
